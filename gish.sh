@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#Version: 1.0.0
 gish() {
     check_uncommitted_changes() {
         if ! git diff-index --quiet HEAD --; then
