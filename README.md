@@ -1,0 +1,2 @@
+# gishscript
+Git command helper.
