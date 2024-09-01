@@ -1,5 +1,57 @@
 #!/bin/bash
-#Version: 1.0.0
+#Version: 1.1.0
+# ヘルプメッセージの表示
+show_help() {
+    echo "gish - A Git automation script"
+    echo
+    echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
+    echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
+    echo "branches, and pushing changes to a remote repository."
+    echo
+    echo "Usage: gish [OPTION]"
+    echo
+    echo "Options:"
+    echo "  --s <name>    Save and apply a stash with the specified name."
+    echo "  --help        Display this help and exit."
+    echo
+    echo "Examples:"
+    echo "  gish --s my_stash_name"
+    echo "      This will save the current working directory and index state with the name 'my_stash_name',"
+    echo "      immediately apply the stash, and then display the stash list."
+    echo
+    echo "  gish"
+    echo "      Run gish without options to automate the commit, branch management, and push process."
+    echo
+    exit 0
+}
+
+# スタッシュを保存し、すぐに適用してスタッシュリストを表示する関数
+stash_and_apply() {
+    local stash_name="$1"
+    git stash save "$stash_name"
+    git stash apply "stash@{0}"
+    echo "Stashed and reapplied state: $stash_name"
+    echo "Current stash list:"
+    git stash list
+    echo "Stash saved as '$stash_name'. The code has been reverted to the '$stash_name' condition."
+}
+
+# オプション引数の解析
+if [[ "$1" == "--help" ]]; then
+    show_help
+fi
+
+if [[ "$1" == "--s" ]]; then
+    if [ -n "$2" ]; then
+        stash_and_apply "$2"
+        exit 0
+    else
+        echo "Error: --s option requires a name argument."
+        exit 1
+    fi
+fi
+
+# gish 関数の定義
 gish() {
     check_uncommitted_changes() {
         if ! git diff-index --quiet HEAD --; then
@@ -129,4 +181,6 @@ gish() {
 
     echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
 }
+
+# オプションなしの場合は通常の gish 関数を実行
 gish "$@"
