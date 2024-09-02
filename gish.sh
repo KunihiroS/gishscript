@@ -1,6 +1,6 @@
 #!/bin/bash
-#Version: 1.1.0
-# ヘルプメッセージの表示
+# Version: 1.2.0
+# Help list
 show_help() {
     echo "gish - A Git automation script"
     echo
@@ -12,46 +12,112 @@ show_help() {
     echo
     echo "Options:"
     echo "  --s <name>    Save and apply a stash with the specified name."
+    echo "  --l           Save and rollback to stash@{0}, deleting all changes after it."
+    echo "  --p           Easy pull from a remote repository, discarding all local changes."
     echo "  --help        Display this help and exit."
     echo
     echo "Examples:"
-    echo "  gish --s my_stash_name"
+    echo "  gish --s \"my_stash_name\""
     echo "      This will save the current working directory and index state with the name 'my_stash_name',"
     echo "      immediately apply the stash, and then display the stash list."
     echo
-    echo "  gish"
-    echo "      Run gish without options to automate the commit, branch management, and push process."
+    echo "  gish --l"
+    echo "      This will rollback to the state of stash@{0}, deleting all changes made after it."
+    echo
+    echo "  gish --p"
+    echo "      This will discard all local changes and pull the latest changes from the selected remote branch."
     echo
     exit 0
 }
 
-# スタッシュを保存し、すぐに適用してスタッシュリストを表示する関数
+# stash save "name" -> stash apply stash@{0}
 stash_and_apply() {
     local stash_name="$1"
-    git stash save "$stash_name"
-    git stash apply "stash@{0}"
+    if ! git stash save "$stash_name"; then
+        echo "Error: Failed to save the stash."
+        exit 1
+    fi
+
+    if ! git stash apply "stash@{0}"; then
+        echo "Error: Failed to apply the stash."
+        exit 1
+    fi
+
     echo "Stashed and reapplied state: $stash_name"
     echo "Current stash list:"
     git stash list
     echo "Stash saved as '$stash_name'. The code has been reverted to the '$stash_name' condition."
 }
 
-# オプション引数の解析
-if [[ "$1" == "--help" ]]; then
-    show_help
-fi
-
-if [[ "$1" == "--s" ]]; then
-    if [ -n "$2" ]; then
-        stash_and_apply "$2"
-        exit 0
+# reset --hard -> stash apply stash@{0}
+apply_stash_rollback() {
+    read -p "Want to apply stash@{0}? *CAUTION: All rollback to stash@{0} condition, your modify will be deleted. [y/N] " confirm
+    if [[ $confirm =~ ^[Yy]$ ]]; then
+        git reset --hard
+        git stash apply "stash@{0}"
+        echo "Rolled back to stash@{0}. All changes after stash@{0} have been deleted."
     else
-        echo "Error: --s option requires a name argument."
-        exit 1
+        echo "Operation cancelled."
     fi
-fi
+}
 
-# gish 関数の定義
+# reset --hard -> pull origin {branch}
+easy_pull() {
+    read -p "Easy pull from remote repo anyway? *CAUTION: All rollback to remote repo condition, your modify will be deleted. [y/N] " confirm
+    if [[ $confirm =~ ^[Yy]$ ]]; then
+        git fetch --all
+        PS3="Select branch to pull: "
+        select branch in $(git branch -r | sed 's/origin\///'); do
+            if [ -n "$branch" ]; then
+                read -p "Final confirmation, are you sure to rollback? [y/N] " final_confirm
+                if [[ $final_confirm =~ ^[Yy]$ ]]; then
+                    git reset --hard "origin/$branch"
+                    echo "Rolled back to remote branch '$branch'."
+                else
+                    echo "Operation cancelled."
+                fi
+                break
+            fi
+        done
+    else
+        echo "Operation cancelled."
+    fi
+}
+
+# Error check
+case "$1" in
+    --help)
+        show_help
+        ;;
+    --s)
+        if [ -n "$2" ]; then
+            # チェック: --s の後に複数の引数が続いていないか確認
+            if [ -n "$3" ]; then
+                echo "Error: --s option requires a single argument. For names with spaces, use quotation marks."
+                exit 1
+            fi
+            stash_and_apply "$2"
+        else
+            echo "Error: --s option requires a name argument. Usage: gish --s \"stash_name\""
+            exit 1
+        fi
+        ;;
+    --l)
+        apply_stash_rollback
+        ;;
+    --p)
+        easy_pull
+        ;;
+    "")
+        gish
+        ;;
+    *)
+        echo "Error: Invalid option '$1'. Use --help to see available options."
+        exit 1
+        ;;
+esac
+
+# gish main
 gish() {
     check_uncommitted_changes() {
         if ! git diff-index --quiet HEAD --; then
@@ -182,5 +248,5 @@ gish() {
     echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
 }
 
-# オプションなしの場合は通常の gish 関数を実行
+# gish()
 gish "$@"
