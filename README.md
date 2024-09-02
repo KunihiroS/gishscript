@@ -4,7 +4,7 @@ Git command helper. A powerful and user-friendly Bash script that simplifies com
 
 ## Version
 
-1.2.1
+1.2.2
 
 ## Release Notes
 

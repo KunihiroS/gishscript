@@ -1,10 +1,10 @@
 #!/bin/bash
-# Version: 1.2.1
+# Version: 1.2.2
 
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.2.1"
+    echo "ver: 1.2.2"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -96,16 +96,23 @@ case "$1" in
         ;;
     --s)
         if [ -n "$2" ]; then
-            # スペースを含む場合、名前はダブルクォートで囲む必要があることをチェック
-            if [[ "$2" != \"*\"* ]] || [[ "$2" != *\"* ]]; then
-                echo "Error: The name argument for --s must be enclosed in double quotation marks. Usage: gish --s \"stash_name\""
+            # Error check " " 
+            if [[ "$2" != \"* ]]; then
+                echo "Error: The name argument for --s must be enclosed in double quotation marks and can contain spaces. Usage: gish --s \"stash name\""
                 exit 1
             fi
-            # ダブルクォートを除去してスタッシュ名として使用
+            # Remove " " to register stash name
             stash_name="${2//\"/}"
+            
+            # Check empty error
+            if [ -z "$stash_name" ]; then
+                echo "Error: Stash name cannot be empty. Usage: gish --s \"stash name\""
+                exit 1
+            fi
+            
             stash_and_apply "$stash_name"
         else
-            echo "Error: --s option requires a name argument. Usage: gish --s \"stash_name\""
+            echo "Error: --s option requires a name argument. Usage: gish --s \"stash name\""
             exit 1
         fi
         ;;
