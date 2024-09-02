@@ -1,71 +1,71 @@
 # gishscript
 
-Git command helper. 
+Git command helper.
 A powerful and user-friendly Bash script that simplifies common Git operations, enhancing your workflow with intuitive commands and interactive prompts.
 
 ## Version
 
-1.2.5
+1.2.6
 
 ## Release Notes
-1.2.5
-Automatic commit message generation by OpenAI.
-Remaining issues: unexpected error occur (works fine though), detailed info is not updated.
 
-1.2.4
-This update introduces several improvements and new features to enhance the user experience when managing Git operations via the `gish` script.
+### 1.2.6
+- Automatic commit message generation by OpenAI.
+- Remaining issues: unexpected error "gish.sh: line 154: gish: command not found" occurs (works fine though).
 
-### New Features:
+## Features:
 
-* **Stash Management with `--s` Option:**
-   * You can use the `--s` option followed by a stash name to save the current working directory and index state to a stash and immediately reapply it. This simplifies the workflow for those who frequently use stashes.
-   * Example: `gish --s my_stash_name` saves the current state as `my_stash_name`, reapplies it, and displays the updated stash list. No space acceptable.
+### Stash Management with --s Option:
+- You can use the --s option followed by a stash name to save the current working directory and index state to a stash and immediately reapply it. This simplifies the workflow for those who frequently use stashes.
+- Example: `gish --s my_stash_name` saves the current state as my_stash_name, reapplies it, and displays the updated stash list. No space acceptable.
 
-* **Rollback to Stash with `--l` Option:**
-   * The `--l` option allows you to rollback to `stash@{0}`, discarding all changes made after that stash. This is useful for quickly reverting to a previous state.
-   * Example: `gish --l` prompts for confirmation and then reverts the working directory to `stash@{0}`.
+### Rollback to Stash with --l Option:
+- The --l option allows you to rollback to stash@{0}, discarding all changes made after that stash. This is useful for quickly reverting to a previous state.
+- Example: `gish --l` prompts for confirmation and then reverts the working directory to stash@{0}.
 
-* **Easy Pull from Remote with `--p` Option:**
-   * The `--p` option provides a simplified way to pull the latest changes from a remote branch, discarding all local changes.
-   * Example: `gish --p` fetches all branches, allows you to select one, and resets your local branch to the selected remote branch.
+### Easy Pull from Remote with --p Option:
+- The --p option provides a simplified way to pull the latest changes from a remote branch, discarding all local changes.
+- Example: `gish --p` fetches all branches, allows you to select one, and resets your local branch to the selected remote branch.
 
-* **User-Friendly Messaging:**
-   * Added clearer messages when using the `--s`, `--l`, and `--p` options. The script provides detailed prompts and warnings to guide the user through potentially destructive operations.
+### Automatic Commit Message Generation by OpenAI:
+- Gish now automatically generates commit messages using OpenAI's API. After generating a message, you are prompted to confirm if it's acceptable. You can edit the message if needed before committing.
+- The script requires an OpenAI API key and uses it to generate concise and relevant commit messages based on your git diff.
 
-* **Help Option (`--help`):**
-   * The `--help` option displays a detailed usage guide for the `gish` script, making it easier for new users to understand and use the script effectively.
+### User-Friendly Messaging:
+- Added clearer messages when using the --s, --l, and --p options. The script provides detailed prompts and warnings to guide the user through potentially destructive operations.
 
-### Improvements:
+### Help Option (--help):
+- The --help option displays a detailed usage guide for the gish script, making it easier for new users to understand and use the script effectively.
 
-* **Error Handling:**
-   * Improved error handling across the script. Invalid options, missing arguments, and other errors now result in informative error messages, preventing unexpected script behavior.
-   * For example, `gish --s mini update` without quotes around the stash name will now correctly trigger an error.
+## Improvements:
 
-* **Code Refinements:**
-   * General improvements in code readability and structure, ensuring smoother operation and easier future maintenance.
-   * Corrected minor issues and improved the output format for better clarity.
+### Error Handling:
+- Improved error handling across the script. Invalid options, missing arguments, and other errors now result in informative error messages, preventing unexpected script behavior.
+- For example, `gish --s mini update` without quotes around the stash name will now correctly trigger an error.
+
+### Code Refinements:
+- General improvements in code readability and structure, ensuring smoother operation and easier future maintenance.
+- Corrected minor issues and improved the output format for better clarity.
 
 ## Usage
 
 ### Overview
-
 Gish is a Bash script designed to streamline and safely execute Git operations. It allows you to interactively perform a series of Git tasks, including committing, branch switching, pushing, and managing stashes.
 
 ### Features
-
-* Manage uncommitted changes
-* Create commits
-* Select and switch branches
-* Create new branches
-* Push to remote repositories
-* Save and apply Git stashes with a single command (`--s` option)
-* Rollback to a specific stash with one command "abbr. load" (`--l` option) 
-* Easy pull from remote, discarding local changes (`--p` option)
-* Access a help guide with usage instructions (`--help` option)
+- Manage uncommitted changes
+- Create commits
+- Select and switch branches
+- Create new branches
+- Push to remote repositories
+- Save and apply Git stashes with a single command (--s option)
+- Rollback to a specific stash with one command "abbr. load" (--l option)
+- Easy pull from remote, discarding local changes (--p option)
+- Access a help guide with usage instructions (--help option)
+- Automatically generate commit messages using OpenAI
 
 ### Usage
-
-1. Save the script as "gish.sh" in the following location: `~/.local/bin/gish.sh` (Note: `~` represents your home directory). Grant execute permissions to the script:
+1. Save the script as "gish.sh" in the following location: `~/.local/bin/gish.sh` (Note: ~ represents your home directory). Grant execute permissions to the script:
 
    ```bash
    chmod +x ~/.local/bin/gish.sh
@@ -87,55 +87,66 @@ Gish is a Bash script designed to streamline and safely execute Git operations. 
 4. Run the gish command within a Git repository.
 
 ### Operation Procedure
+1. When you run the gish command, the current branch is displayed. If there are uncommitted changes, the following options are presented:
+   - Commit changes
+   - Stash changes
+   - Continue with uncommitted changes
+   - Cancel the operation
 
-When you run the gish command, the current branch is displayed. If there are uncommitted changes, the following options are presented:
+2. The changes are staged, and the result of git status is displayed.
 
-1. Commit changes
-2. Stash changes
-3. Continue with uncommitted changes
-4. Cancel the operation
+3. Choose whether to commit:
+   - If Yes, you will be prompted to enter a commit message.
+   - If No, the operation is canceled.
 
-The changes are staged, and the result of git status is displayed.
+4. Select the target branch:
+   - Current branch
+   - Existing branch
+   - New branch
 
-Choose whether to commit:
+5. Depending on the selection, the branch is switched or created.
 
-- If Yes, you will be prompted to enter a commit message.
-- If No, the operation is canceled.
+6. Finally, you are asked whether to push to the selected branch.
 
-Select the target branch:
-
-1. Current branch
-2. Existing branch
-3. New branch
-
-Depending on the selection, the branch is switched or created.
-
-Finally, you are asked whether to push to the selected branch.
-
-After the operation is completed, the current branch is displayed.
+7. After the operation is completed, the current branch is displayed.
 
 ### Notes
-
 - The commit message cannot be empty.
 - Be cautious when switching branches with uncommitted changes.
 - Push operations depend on the network connection status.
 - If the operation is canceled, staged changes are not reset.
 
+### Environment Configuration:
+
+#### Environment Variables:
+- Place your .env file in the same directory as generate_commit_message.py. This file should contain your OpenAI API key as OPENAI_API_KEY and the path to your log file as LOG_FILE_PATH.
+- Example .env content:
+  ```
+  OPENAI_API_KEY=your_openai_api_key_here
+  LOG_FILE_PATH=/path/to/your/logfile.log
+  ```
+
+#### Python Script Path:
+- If your Python script (generate_commit_message.py) is located in a different directory, update the path in the gish.sh script:
+  ```bash
+  commit_message=$($python_cmd /path/to/your/generate_commit_message.py 2>&1)
+  ```
+- Ensure this path correctly points to your script to avoid execution errors.
+
 ## Troubleshooting
 
 - If the script cannot be executed: Ensure the script file has execute permissions. You can grant permissions by running:
-
   ```bash
   sudo chmod +x /usr/local/bin/gish
   ```
 
 - If branch switching fails: Check for uncommitted changes. Ensure there are no conflicts.
+
 - If pushing fails: Check your internet connection. Ensure you have access rights to the remote repository.
 
 ## Customization
 
 By editing the script, the following customizations are possible:
-
 - Changing the default branch name
 - Executing additional Git commands
 - Customizing error messages
