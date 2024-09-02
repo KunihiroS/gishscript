@@ -5,7 +5,7 @@ A powerful and user-friendly Bash script that simplifies common Git operations, 
 
 ## Version
 
-1.2.2
+1.2.4
 
 ## Release Notes
 
@@ -14,8 +14,8 @@ This update introduces several improvements and new features to enhance the user
 ### New Features:
 
 * **Stash Management with `--s` Option:**
-   * You can use the `--s` option followed by a stash name to save the current working directory and index state to a stash and immediately reapply it. This simplifies the workflow for those who frequently use stashes. **" " is required**.
-   * Example: `gish --s "my_stash_name"` saves the current state as `my_stash_name`, reapplies it, and displays the updated stash list.
+   * You can use the `--s` option followed by a stash name to save the current working directory and index state to a stash and immediately reapply it. This simplifies the workflow for those who frequently use stashes.
+   * Example: `gish --s my_stash_name` saves the current state as `my_stash_name`, reapplies it, and displays the updated stash list. No space acceptable.
 
 * **Rollback to Stash with `--l` Option:**
    * The `--l` option allows you to rollback to `stash@{0}`, discarding all changes made after that stash. This is useful for quickly reverting to a previous state.
