@@ -96,21 +96,20 @@ case "$1" in
         ;;
     --s)
         if [ -n "$2" ]; then
-            # Error check " " 
-            if [[ "$2" != \"* ]]; then
+            # ダブルクォートのチェックを修正
+            if [[ "$2" =~ ^\".*\"$ ]]; then
+                # ダブルクォートを除去してスタッシュ名として使用
+                stash_name="${2//\"/}"
+                # 空の名前をチェック
+                if [ -z "$stash_name" ]; then
+                    echo "Error: Stash name cannot be empty. Usage: gish --s \"stash name\""
+                    exit 1
+                fi
+                stash_and_apply "$stash_name"
+            else
                 echo "Error: The name argument for --s must be enclosed in double quotation marks and can contain spaces. Usage: gish --s \"stash name\""
                 exit 1
             fi
-            # Remove " " to register stash name
-            stash_name="${2//\"/}"
-            
-            # Check empty error
-            if [ -z "$stash_name" ]; then
-                echo "Error: Stash name cannot be empty. Usage: gish --s \"stash name\""
-                exit 1
-            fi
-            
-            stash_and_apply "$stash_name"
         else
             echo "Error: --s option requires a name argument. Usage: gish --s \"stash name\""
             exit 1

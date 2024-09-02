@@ -1,6 +1,7 @@
 # gishscript
 
-Git command helper. A powerful and user-friendly Bash script that simplifies common Git operations, enhancing your workflow with intuitive commands and interactive prompts.
+Git command helper. 
+A powerful and user-friendly Bash script that simplifies common Git operations, enhancing your workflow with intuitive commands and interactive prompts.
 
 ## Version
 
