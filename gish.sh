@@ -1,9 +1,9 @@
 #!/bin/bash
-# Version: 1.2.4
+# Version: 1.2.5
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.2.4"
+    echo "ver: 1.2.5"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -88,6 +88,27 @@ easy_pull() {
     exit 0  # スクリプトを終了する
 }
 
+generate_smart_commit_message() {
+    if command -v python3 &> /dev/null; then
+        python_cmd="python3"
+    elif command -v python &> /dev/null; then
+        python_cmd="python"
+    else
+        echo "Error: Neither python3 nor python found in PATH. Falling back to manual entry."
+        commit_message=""
+        return 1
+    fi
+
+    echo "Generating commit message with AI... please wait."
+    commit_message=$($python_cmd /home/kunihiros/dev/aider/projects/gishscript/generate_commit_message.py 2>&1)
+    if [ $? -eq 0 ]; then
+        echo "$commit_message"
+    else
+        echo "Error: Failed to generate commit message. Falling back to manual entry."
+        return 1
+    fi
+}
+
 # Error check
 case "$1" in
     --help)
@@ -137,15 +158,21 @@ gish() {
             case "$choice" in
                 1)
                     git add -A
-                    while true; do
-                        read -p "Enter commit message: " commit_msg
-                        if [ -n "$commit_msg" ]; then
-                            git commit -m "$commit_msg"
-                            break
-                        else
-                            echo "Commit message cannot be empty. Please try again."
-                        fi
-                    done
+                    commit_message=""
+                    generate_smart_commit_message
+                    if [ $? -ne 0 ] || [ -z "$commit_message" ]; then
+                        while true; do
+                            read -p "Enter your commit message: " commit_message
+                            if [ -n "$commit_message" ]; then
+                                git commit -m "$commit_message"
+                                break
+                            else
+                                echo "Commit message cannot be empty. Please try again."
+                            fi
+                        done
+                    else
+                        git commit -m "$commit_message"
+                    fi
                     ;;
                 2)
                     git stash save "Automatic stash by gish script"
@@ -180,22 +207,27 @@ gish() {
 
     current_branch=$(git rev-parse --abbrev-ref HEAD)
     echo "Current branch: $current_branch"
-
     git status
 
     read -p "Changes have been staged. Proceed with commit? (y/N): " proceed
     case "$proceed" in
         [yY]*)
             git add -A
-            while true; do
-                read -p "Enter commit message: " msg
-                if [ -n "$msg" ]; then
-                    git commit -m "$msg"
-                    break
-                else
-                    echo "Commit message cannot be empty. Please try again."
-                fi
-            done
+            commit_message=""
+            generate_smart_commit_message
+            if [ $? -ne 0 ] || [ -z "$commit_message" ]; then
+                while true; do
+                    read -p "Enter your commit message: " msg
+                    if [ -n "$msg" ]; then
+                        git commit -m "$msg"
+                        break
+                    else
+                        echo "Commit message cannot be empty. Please try again."
+                    fi
+                done
+            else
+                git commit -m "$commit_message"
+            fi
 
             echo "Select target branch:"
             echo "1) Current branch ($current_branch)"
