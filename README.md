@@ -5,10 +5,14 @@ A powerful and user-friendly Bash script that simplifies common Git operations, 
 
 ## Version
 
-1.2.4
+1.2.5
 
 ## Release Notes
+1.2.5
+Automatic commit message generation by OpenAI.
+Remaining issues: unexpected error occur (works fine though), unable modifying generated commit message, detailed info is not updated.
 
+1.2.4
 This update introduces several improvements and new features to enhance the user experience when managing Git operations via the `gish` script.
 
 ### New Features:
