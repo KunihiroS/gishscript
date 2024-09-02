@@ -4,7 +4,7 @@ Git command helper. A powerful and user-friendly Bash script that simplifies com
 
 ## Version
 
-1.2.0
+1.2.1
 
 ## Release Notes
 
@@ -13,7 +13,7 @@ This update introduces several improvements and new features to enhance the user
 ### New Features:
 
 * **Stash Management with `--s` Option:**
-   * You can use the `--s` option followed by a stash name to save the current working directory and index state to a stash and immediately reapply it. This simplifies the workflow for those who frequently use stashes.
+   * You can use the `--s` option followed by a stash name to save the current working directory and index state to a stash and immediately reapply it. This simplifies the workflow for those who frequently use stashes. **" " is required**.
    * Example: `gish --s "my_stash_name"` saves the current state as `my_stash_name`, reapplies it, and displays the updated stash list.
 
 * **Rollback to Stash with `--l` Option:**

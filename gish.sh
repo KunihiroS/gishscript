@@ -1,5 +1,6 @@
 #!/bin/bash
-# Version: 1.2.0
+# Version: 1.2.1
+
 # Help list
 show_help() {
     echo "gish - A Git automation script"
@@ -11,7 +12,7 @@ show_help() {
     echo "Usage: gish [OPTION]"
     echo
     echo "Options:"
-    echo "  --s <name>    Save and apply a stash with the specified name. name needed inside "name""
+    echo "  --s <name>    Save and apply a stash with the specified name. name needed inside \"name\""
     echo "  --l           Save and rollback to stash@{0}, deleting all changes after it."
     echo "  --p           Easy pull from a remote repository, discarding all local changes."
     echo "  --help        Display this help and exit."
@@ -47,6 +48,7 @@ stash_and_apply() {
     echo "Current stash list:"
     git stash list
     echo "Stash saved as '$stash_name'. The code has been reverted to the '$stash_name' condition."
+    exit 0  # スクリプトを終了する
 }
 
 # reset --hard -> stash apply stash@{0}
@@ -59,6 +61,7 @@ apply_stash_rollback() {
     else
         echo "Operation cancelled."
     fi
+    exit 0  # スクリプトを終了する
 }
 
 # reset --hard -> pull origin {branch}
@@ -82,6 +85,7 @@ easy_pull() {
     else
         echo "Operation cancelled."
     fi
+    exit 0  # スクリプトを終了する
 }
 
 # Error check
@@ -91,12 +95,14 @@ case "$1" in
         ;;
     --s)
         if [ -n "$2" ]; then
-            # チェック: --s の後に複数の引数が続いていないか確認
-            if [ -n "$3" ]; then
-                echo "Error: --s option requires a single argument. For names with spaces, use quotation marks."
+            # スペースを含む場合、名前はダブルクォートで囲む必要があることをチェック
+            if [[ "$2" != \"*\"* ]] || [[ "$2" != *\"* ]]; then
+                echo "Error: The name argument for --s must be enclosed in double quotation marks. Usage: gish --s \"stash_name\""
                 exit 1
             fi
-            stash_and_apply "$2"
+            # ダブルクォートを除去してスタッシュ名として使用
+            stash_name="${2//\"/}"
+            stash_and_apply "$stash_name"
         else
             echo "Error: --s option requires a name argument. Usage: gish --s \"stash_name\""
             exit 1
