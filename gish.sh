@@ -13,7 +13,7 @@ show_help() {
     echo "Options:"
     echo "  --s <name>    Save and apply a stash with the specified name. name needed inside "name""
     echo "  --l           Save and rollback to stash@{0}, deleting all changes after it."
-    echo "  --p           Easy pull from a remote repository, discarding all local changes."godddddddddddddddddddddddddddddddddddd
+    echo "  --p           Easy pull from a remote repository, discarding all local changes."
     echo "  --help        Display this help and exit."
     echo
     echo "Examples:"
