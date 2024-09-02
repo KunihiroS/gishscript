@@ -102,7 +102,21 @@ generate_smart_commit_message() {
     echo "Generating commit message with AI... please wait."
     commit_message=$($python_cmd /home/kunihiros/dev/aider/projects/gishscript/generate_commit_message.py 2>&1)
     if [ $? -eq 0 ]; then
-        echo "$commit_message"
+        echo "Generated commit message: $commit_message"
+        read -p "Is this commit message okay? [y/N]: " user_confirmation
+        if [[ $user_confirmation =~ ^[Yy]$ ]]; then
+            echo "$commit_message"
+        else
+            while true; do
+                read -p "Enter your commit message: " commit_message
+                if [ -n "$commit_message" ]; then
+                    break
+                else
+                    echo "Commit message cannot be empty. Please try again."
+                fi
+            done
+            echo "$commit_message"
+        fi
     else
         echo "Error: Failed to generate commit message. Falling back to manual entry."
         return 1

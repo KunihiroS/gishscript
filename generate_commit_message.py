@@ -62,24 +62,6 @@ def generate_commit_message(diff_content):
         logging.error(f"Error details: {e}")
         sys.exit(f"Error: An unexpected error occurred while generating commit message. Details: {str(e)}")
 
-'''
-def generate_commit_message(diff_content):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant for generating Git commit messages."},
-                {"role": "user", "content": f"Generate a concise Git commit message for the following diff:\n{diff_content}"}
-            ],
-            max_tokens=120,
-            timeout=15  # タイムアウトを10秒に設定
-        )
-        return response.choices[0].message['content'].strip()
-    except Exception as e:
-        logging.error(f"Unexpected error occurred while generating commit message: {e}")
-        sys.exit("Error: An unexpected error occurred while generating commit message.")
-'''
-
 # メイン処理
 def main():
     logging.info("Starting commit message generation process.")
