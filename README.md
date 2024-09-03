@@ -5,9 +5,9 @@ A powerful and user-friendly Bash script that simplifies common Git operations, 
 
 ## Version
 
-1.2.7
+1.2.8
 
-## Release Notes
+## Recent topic
 
 - --s option with empty name is allowed and add "yyyymmddhhmmss"
 

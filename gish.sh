@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.2.7"
+    echo "ver: 1.2.8"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -37,6 +37,12 @@ stash_and_apply() {
     # If no stash name is provided, use the current timestamp as the stash name
     if [ -z "$stash_name" ]; then
         stash_name=$(date +"%Y%m%d%H%M%S")
+    fi
+
+    # ワーキングツリーに変更があるか確認
+    if git diff-index --quiet HEAD --; then
+        echo "No local changes to save"
+        exit 0  # スクリプトを終了する
     fi
 
     if ! git stash save "$stash_name"; then
