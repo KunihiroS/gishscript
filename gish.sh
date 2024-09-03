@@ -75,7 +75,7 @@ easy_pull() {
     if [[ $confirm =~ ^[Yy]$ ]]; then
         git fetch --all
         PS3="Select branch to pull: "
-        select branch in $(git branch -r | sed 's/origin\///'); do
+        select branch in $(git branch -r | grep -v '\->' | grep -v "HEAD" | sed 's/origin\///'); do
             if [ -n "$branch" ]; then
                 read -p "Final confirmation, are you sure to rollback? [y/N] " final_confirm
                 if [[ $final_confirm =~ ^[Yy]$ ]]; then
