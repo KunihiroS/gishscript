@@ -129,7 +129,6 @@ generate_smart_commit_message() {
 }
 
 # Error check
-# Error check
 case "$1" in
     --help)
         show_help
