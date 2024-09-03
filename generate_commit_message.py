@@ -7,7 +7,7 @@ import json
 from dotenv import load_dotenv
 
 # ログの設定
-logging.basicConfig(filename="/home/kunihiros/dev/aider/projects/gishscript/gish.log", level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename="/home/kunihiros/dev/aider/projects/gishscript/gish.log", level=logging.CRITICAL, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # .envファイルの読み込み
 load_dotenv()

@@ -1,9 +1,8 @@
 #!/bin/bash
-# Version: 1.2.5
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.2.5"
+    echo "ver: 1.2.7"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -34,6 +33,12 @@ show_help() {
 # stash save "name" -> stash apply stash@{0}
 stash_and_apply() {
     local stash_name="$1"
+    
+    # If no stash name is provided, use the current timestamp as the stash name
+    if [ -z "$stash_name" ]; then
+        stash_name=$(date +"%Y%m%d%H%M%S")
+    fi
+
     if ! git stash save "$stash_name"; then
         echo "Error: Failed to save the stash."
         exit 1
@@ -124,25 +129,16 @@ generate_smart_commit_message() {
 }
 
 # Error check
+# Error check
 case "$1" in
     --help)
         show_help
         ;;
     --s)
-        if [ -n "$2" ]; then
-            stash_name="$2"
+        stash_name="$2"  # Capture the second argument (stash name)
 
-            # empty check
-            if [ -z "$stash_name" ]; then
-                echo "Error: Stash name cannot be empty. Usage: gish --s stash_name"
-                exit 1
-            fi
-            
-            stash_and_apply "$stash_name"
-        else
-            echo "Error: --s option requires a name argument. Usage: gish --s stash_name"
-            exit 1
-        fi
+        stash_and_apply "$stash_name"  # Pass it to the function
+
         ;;
     --l)
         apply_stash_rollback

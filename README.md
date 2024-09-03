@@ -5,19 +5,17 @@ A powerful and user-friendly Bash script that simplifies common Git operations, 
 
 ## Version
 
-1.2.6
+1.2.7
 
 ## Release Notes
 
-### 1.2.6
-- Automatic commit message generation by OpenAI.
-- Remaining issues: unexpected error "gish.sh: line 154: gish: command not found" occurs (works fine though).
+- --s option with empty name is allowed and add "yyyymmddhhmmss"
 
 ## Features:
 
 ### Stash Management with --s Option:
 - You can use the --s option followed by a stash name to save the current working directory and index state to a stash and immediately reapply it. This simplifies the workflow for those who frequently use stashes.
-- Example: `gish --s my_stash_name` saves the current state as my_stash_name, reapplies it, and displays the updated stash list. No space acceptable.
+- Example: `gish --s my_stash_name` saves the current state as my_stash_name, reapplies it, and displays the updated stash list. No space acceptable. If the name is empty, the name is "yyyymmddhhmmss".
 
 ### Rollback to Stash with --l Option:
 - The --l option allows you to rollback to stash@{0}, discarding all changes made after that stash. This is useful for quickly reverting to a previous state.
@@ -87,6 +85,8 @@ Gish is a Bash script designed to streamline and safely execute Git operations. 
 4. Run the gish command within a Git repository.
 
 ### Operation Procedure
+The below is main function (gish without any options).
+
 1. When you run the gish command, the current branch is displayed. If there are uncommitted changes, the following options are presented:
    - Commit changes
    - Stash changes
@@ -96,7 +96,7 @@ Gish is a Bash script designed to streamline and safely execute Git operations. 
 2. The changes are staged, and the result of git status is displayed.
 
 3. Choose whether to commit:
-   - If Yes, you will be prompted to enter a commit message.
+   - If Yes, commit message will be generated and if you want to change you will be prompted to enter a commit message.
    - If No, the operation is canceled.
 
 4. Select the target branch:
