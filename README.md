@@ -5,11 +5,13 @@ A powerful and user-friendly Bash script that simplifies common Git operations, 
 
 ## Version
 
-1.2.8
+1.2.9
 
 ## Recent topic
 
-- --s option with empty name is allowed and add "yyyymmddhhmmss"
+- gish command spec changed
+   now selecting existing branch works as properly as developer's intention.
+   when you select existing changes push to the selected branch and removed from current branch, and then move to the selected branch which for push.
 
 ## Features:
 

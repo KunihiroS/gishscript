@@ -1,8 +1,9 @@
 #!/bin/bash
+
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.2.8"
+    echo "ver: 1.2.9"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -134,34 +135,6 @@ generate_smart_commit_message() {
     fi
 }
 
-# arg check
-case "$1" in
-    --help)
-        show_help
-        ;;
-    --s)
-        stash_name="$2"  # Capture the second argument (stash name)
-
-        stash_and_apply "$stash_name"  # Pass it to the function
-
-        ;;
-    --l)
-        apply_stash_rollback
-        ;;
-    --p)
-        easy_pull
-        ;;
-    "")
-    # Suppress "command not found" error while maintaining functionality
-    # This is a workaround for the function definition order issue
-        (gish) 2>/dev/null
-        ;;
-    *)
-        echo "Error: Invalid option '$1'. Use --help to see available options."
-        exit 1
-        ;;
-esac
-
 # gish main
 gish() {
     check_uncommitted_changes() {
@@ -287,8 +260,24 @@ gish() {
 
             read -p "Push changes to $target_branch? (y/N): " push_confirm
             if [[ $push_confirm =~ ^[Yy]$ ]]; then
+                echo "Note: This operation will automatically commit changes on the current branch, push to the target branch, reset the current branch, and switch back to the target branch."
+                read -p "Do you want to proceed? (y/N): " confirm
+                if [[ $confirm != [Yy] ]]; then
+                    echo "Operation cancelled."
+                    return 1
+                fi
+
                 if git push origin "$target_branch"; then
                     echo "Push to $target_branch successful."
+                    
+                    # 元のブランチに戻り、最後のコミットを取り消す
+                    git checkout "$current_branch"
+                    git reset HEAD~1
+                    echo "Reset $current_branch to previous commit."
+                    
+                    # 最後にターゲットブランチに戻る
+                    git checkout "$target_branch"
+                    echo "Switched back to $target_branch."
                 else
                     echo "Push to $target_branch failed. Check your connection or remote settings."
                 fi
@@ -305,5 +294,31 @@ gish() {
     return 0  # success response
 }
 
-# gish()
+# arg check
+case "$1" in
+    --help)
+        show_help
+        ;;
+    --s)
+        stash_name="$2"  # Capture the second argument (stash name)
+        stash_and_apply "$stash_name"  # Pass it to the function
+        ;;
+    --l)
+        apply_stash_rollback
+        ;;
+    --p)
+        easy_pull
+        ;;
+    "")
+        # Suppress "command not found" error while maintaining functionality
+        # This is a workaround for the function definition order issue
+        (gish) 2>/dev/null
+        ;;
+    *)
+        echo "Error: Invalid option '$1'. Use --help to see available options."
+        exit 1
+        ;;
+esac
+
+# Run gish function
 gish "$@"
