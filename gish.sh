@@ -31,62 +31,84 @@ show_help() {
     exit 0
 }
 
+# エラー処理関数
+handle_error() {
+    local error_message="$1"
+    local rollback_function="$2"
+    echo "Error: $error_message"
+    if [[ -n "$rollback_function" ]]; then
+        echo "Attempting to rollback changes..."
+        $rollback_function
+    fi
+    return 1
+}
+
 # stash save "name" -> stash apply stash@{0}
 stash_and_apply() {
     local stash_name="$1"
     
-    # If no stash name is provided, use the current timestamp as the stash name
     if [ -z "$stash_name" ]; then
         stash_name=$(date +"%Y%m%d%H%M%S")
     fi
 
-    # ワーキングツリーに変更があるか確認
     if git diff-index --quiet HEAD --; then
         echo "No local changes to save"
-        exit 0  # スクリプトを終了する
+        return 0
     fi
 
-    if ! git stash save "$stash_name"; then
-        echo "Error: Failed to save the stash."
-        exit 1
+    if ! git stash push -m "$stash_name"; then
+        handle_error "Failed to save the stash."
+        return 1
     fi
 
     if ! git stash apply "stash@{0}"; then
-        echo "Error: Failed to apply the stash."
-        exit 1
+        handle_error "Failed to apply the stash." "git stash pop"
+        return 1
     fi
 
     echo "Stashed and reapplied state: $stash_name"
     echo "Current stash list:"
     git stash list
     echo "Stash saved as '$stash_name'. The code has been reverted to the '$stash_name' condition."
-    exit 0  # スクリプトを終了する
+    return 0
 }
 
 # reset --hard -> stash apply stash@{0}
 apply_stash_rollback() {
-    read -p "Want to apply stash@{0}? *CAUTION: All rollback to stash@{0} condition, your modify will be deleted. [y/N] " confirm
-    if [[ $confirm =~ ^[Yy]$ ]]; then
-        git reset --hard
-        git stash apply "stash@{0}"
+    read -p "Want to apply stash@{0}? *CAUTION: All changes after stash@{0} will be deleted. Type 'yes' to confirm: " confirm
+    if [[ $confirm == "yes" ]]; then
+        if ! git reset --hard; then
+            handle_error "Failed to reset the working directory."
+            return 1
+        fi
+        if ! git stash apply "stash@{0}"; then
+            handle_error "Failed to apply stash@{0}."
+            return 1
+        fi
         echo "Rolled back to stash@{0}. All changes after stash@{0} have been deleted."
     else
         echo "Operation cancelled."
     fi
-    exit 0  # スクリプトを終了する
+    return 0
 }
 
 # reset --hard -> pull origin {branch}
 easy_pull() {
-    read -p "Easy pull from remote repo anyway? *CAUTION: All rollback to remote repo condition, your modify will be deleted. [y/N] " confirm
-    if [[ $confirm =~ ^[Yy]$ ]]; then
-        git fetch --all
+    read -p "Easy pull from remote repo anyway? *CAUTION: All local changes will be deleted. Type 'yes' to confirm: " confirm
+    if [[ $confirm == "yes" ]]; then
+        if ! git fetch --all; then
+            handle_error "Failed to fetch from remote repository."
+            return 1
+        fi
         PS3="Select branch to pull: "
         select branch in $(git branch -r | grep -v '\->' | grep -v "HEAD" | sed 's/origin\///'); do
             if [ -n "$branch" ]; then
-                read -p "Final confirmation, are you sure to rollback? [y/N] " final_confirm
-                if [[ $final_confirm =~ ^[Yy]$ ]]; then
-                    git reset --hard "origin/$branch"
+                read -p "Final confirmation, are you sure to rollback? Type 'yes' to confirm: " final_confirm
+                if [[ $final_confirm == "yes" ]]; then
+                    if ! git reset --hard "origin/$branch"; then
+                        handle_error "Failed to reset to origin/$branch."
+                        return 1
+                    fi
                     echo "Rolled back to remote branch '$branch'."
                 else
                     echo "Operation cancelled."
@@ -97,7 +119,7 @@ easy_pull() {
     else
         echo "Operation cancelled."
     fi
-    exit 0  # スクリプトを終了する
+    return 0
 }
 
 generate_smart_commit_message() {
@@ -113,25 +135,25 @@ generate_smart_commit_message() {
 
     echo "Generating commit message with AI... please wait."
     commit_message=$($python_cmd /home/kunihiros/dev/aider/projects/gishscript/generate_commit_message.py 2>&1)
-    if [ $? -eq 0 ]; then
-        echo "Generated commit message: $commit_message"
-        read -p "Is this commit message okay? [y/N]: " user_confirmation
-        if [[ $user_confirmation =~ ^[Yy]$ ]]; then
-            echo "$commit_message"
-        else
-            while true; do
-                read -p "Enter your commit message: " commit_message
-                if [ -n "$commit_message" ]; then
-                    break
-                else
-                    echo "Commit message cannot be empty. Please try again."
-                fi
-            done
-            echo "$commit_message"
-        fi
-    else
-        echo "Error: Failed to generate commit message. Falling back to manual entry."
+    if [ $? -ne 0 ]; then
+        handle_error "Failed to generate commit message. Falling back to manual entry."
         return 1
+    fi
+
+    echo "Generated commit message: $commit_message"
+    read -p "Is this commit message okay? [y/N]: " user_confirmation
+    if [[ $user_confirmation =~ ^[Yy]$ ]]; then
+        echo "$commit_message"
+    else
+        while true; do
+            read -p "Enter your commit message: " commit_message
+            if [ -n "$commit_message" ]; then
+                break
+            else
+                echo "Commit message cannot be empty. Please try again."
+            fi
+        done
+        echo "$commit_message"
     fi
 }
 
@@ -147,25 +169,31 @@ gish() {
             read -p "Choose an option (1-4): " choice
             case "$choice" in
                 1)
-                    git add -A
+                    if ! git add -A; then
+                        handle_error "Failed to stage changes."
+                        return 1
+                    fi
                     commit_message=""
-                    generate_smart_commit_message
-                    if [ $? -ne 0 ] || [ -z "$commit_message" ]; then
+                    if ! generate_smart_commit_message; then
                         while true; do
                             read -p "Enter your commit message: " commit_message
                             if [ -n "$commit_message" ]; then
-                                git commit -m "$commit_message"
                                 break
                             else
                                 echo "Commit message cannot be empty. Please try again."
                             fi
                         done
-                    else
-                        git commit -m "$commit_message"
+                    fi
+                    if ! git commit -m "$commit_message"; then
+                        handle_error "Failed to commit changes."
+                        return 1
                     fi
                     ;;
                 2)
-                    git stash save "Automatic stash by gish script"
+                    if ! git stash save "Automatic stash by gish script"; then
+                        handle_error "Failed to stash changes."
+                        return 1
+                    fi
                     echo "Changes stashed."
                     ;;
                 3)
@@ -187,8 +215,13 @@ gish() {
         target_branch="$1"
         current_branch=$(git rev-parse --abbrev-ref HEAD)
         if [ "$current_branch" != "$target_branch" ]; then
-            check_uncommitted_changes || return 1
-            git checkout "$target_branch"
+            if ! check_uncommitted_changes; then
+                return 1
+            fi
+            if ! git checkout "$target_branch"; then
+                handle_error "Failed to checkout branch $target_branch."
+                return 1
+            fi
             echo "Switched to branch $target_branch."
         else
             echo "Already on branch $target_branch."
@@ -199,24 +232,36 @@ gish() {
     echo "Current branch: $current_branch"
     git status
 
+    if ! git diff-index --quiet HEAD --; then
+        read -p "You have unstaged changes. Do you want to stage all changes? (y/N): " stage_confirm
+        if [[ $stage_confirm =~ ^[Yy]$ ]]; then
+            if ! git add -A; then
+                handle_error "Failed to stage changes."
+                return 1
+            fi
+        else
+            echo "Operation cancelled. Changes are not staged."
+            return 1
+        fi
+    fi
+
     read -p "Changes have been staged. Proceed with commit? (y/N): " proceed
     case "$proceed" in
         [yY]*)
-            git add -A
             commit_message=""
-            generate_smart_commit_message
-            if [ $? -ne 0 ] || [ -z "$commit_message" ]; then
+            if ! generate_smart_commit_message; then
                 while true; do
-                    read -p "Enter your commit message: " msg
-                    if [ -n "$msg" ]; then
-                        git commit -m "$msg"
+                    read -p "Enter your commit message: " commit_message
+                    if [ -n "$commit_message" ]; then
                         break
                     else
                         echo "Commit message cannot be empty. Please try again."
                     fi
                 done
-            else
-                git commit -m "$commit_message"
+            fi
+            if ! git commit -m "$commit_message"; then
+                handle_error "Failed to commit changes."
+                return 1
             fi
 
             echo "Select target branch:"
@@ -238,16 +283,24 @@ gish() {
                             break
                         fi
                     done
-                    safe_checkout "$target_branch"
+                    if ! safe_checkout "$target_branch"; then
+                        return 1
+                    fi
                     ;;
                 3)
                     read -p "Enter new branch name: " new_branch
                     read -p "Branch '$new_branch' will be created. Switch to new branch '$new_branch'? (y/N): " switch_choice
                     if [[ $switch_choice =~ ^[Yy]$ ]]; then
-                        git checkout -b "$new_branch"
+                        if ! git checkout -b "$new_branch"; then
+                            handle_error "Failed to create and checkout new branch $new_branch."
+                            return 1
+                        fi
                         echo "New branch created, switched to new branch $new_branch."
                     else
-                        git branch "$new_branch"
+                        if ! git branch "$new_branch"; then
+                            handle_error "Failed to create new branch $new_branch."
+                            return 1
+                        fi
                         echo "New branch $new_branch created without switching. You are still on $current_branch."
                     fi
                     target_branch="$new_branch"
@@ -260,27 +313,11 @@ gish() {
 
             read -p "Push changes to $target_branch? (y/N): " push_confirm
             if [[ $push_confirm =~ ^[Yy]$ ]]; then
-                echo "Note: This operation will automatically commit changes on the current branch, push to the target branch, reset the current branch, and switch back to the target branch."
-                read -p "Do you want to proceed? (y/N): " confirm
-                if [[ $confirm != [Yy] ]]; then
-                    echo "Operation cancelled."
+                if ! git push origin "$target_branch"; then
+                    handle_error "Push to $target_branch failed. Check your connection or remote settings."
                     return 1
                 fi
-
-                if git push origin "$target_branch"; then
-                    echo "Push to $target_branch successful."
-                    
-                    # 元のブランチに戻り、最後のコミットを取り消す
-                    git checkout "$current_branch"
-                    git reset HEAD~1
-                    echo "Reset $current_branch to previous commit."
-                    
-                    # 最後にターゲットブランチに戻る
-                    git checkout "$target_branch"
-                    echo "Switched back to $target_branch."
-                else
-                    echo "Push to $target_branch failed. Check your connection or remote settings."
-                fi
+                echo "Push to $target_branch successful."
             else
                 echo "Push cancelled."
             fi
@@ -294,25 +331,27 @@ gish() {
     return 0  # success response
 }
 
-# arg check
+# 引数チェック
 case "$1" in
     --help)
         show_help
+        exit 0
         ;;
     --s)
-        stash_name="$2"  # Capture the second argument (stash name)
-        stash_and_apply "$stash_name"  # Pass it to the function
+        stash_name="$2"
+        stash_and_apply "$stash_name"
+        exit 0
         ;;
     --l)
         apply_stash_rollback
+        exit 0
         ;;
     --p)
         easy_pull
+        exit 0
         ;;
     "")
-        # Suppress "command not found" error while maintaining functionality
-        # This is a workaround for the function definition order issue
-        (gish) 2>/dev/null
+        # 引数がない場合はそのまま進む
         ;;
     *)
         echo "Error: Invalid option '$1'. Use --help to see available options."
