@@ -3,7 +3,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.2.9"
+    echo "ver: 1.3.0"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -133,205 +133,196 @@ generate_smart_commit_message() {
         return 1
     fi
 
-    echo "Generating commit message with AI... please wait."
-    commit_message=$($python_cmd /home/kunihiros/dev/aider/projects/gishscript/generate_commit_message.py 2>&1)
-    if [ $? -ne 0 ]; then
-        handle_error "Failed to generate commit message. Falling back to manual entry."
+    # Get the directory of the current script
+    script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+    commit_script="$script_dir/generate_commit_message.py"
+    env_file="$HOME/.gish_env"
+
+    if [ ! -f "$commit_script" ]; then
+        echo "Error: generate_commit_message.py not found in the same directory as gish.sh"
         return 1
     fi
 
-    echo "Generated commit message: $commit_message"
-    read -p "Is this commit message okay? [y/N]: " user_confirmation
-    if [[ $user_confirmation =~ ^[Yy]$ ]]; then
-        echo "$commit_message"
-    else
-        while true; do
-            read -p "Enter your commit message: " commit_message
-            if [ -n "$commit_message" ]; then
-                break
-            else
-                echo "Commit message cannot be empty. Please try again."
-            fi
-        done
-        echo "$commit_message"
+    if [ ! -f "$env_file" ]; then
+        echo "Error: .gish_env file not found in your home directory."
+        return 1
     fi
+
+    # Set up environment variables
+    export $(grep -v '^#' "$env_file" | xargs)
+
+    echo "Generating commit message with AI... please wait."
+    commit_message=$($python_cmd "$commit_script" 2>&1)
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to generate commit message. Error output:"
+        echo "$commit_message"
+        echo "Falling back to manual entry."
+        commit_message=""
+    else
+        echo "Generated commit message: $commit_message"
+        read -p "Is this commit message okay? [y/N]: " user_confirmation
+        if [[ ! $user_confirmation =~ ^[Yy]$ ]]; then
+            commit_message=""
+        fi
+    fi
+
+    while [ -z "$commit_message" ]; do
+        read -p "Enter your commit message: " commit_message
+        if [ -z "$commit_message" ]; then
+            echo "Commit message cannot be empty. Please try again."
+        fi
+    done
+
+    echo "$commit_message"
 }
+
 
 # gish main
 gish() {
-    check_uncommitted_changes() {
-        if ! git diff-index --quiet HEAD --; then
-            echo "Warning: You have uncommitted changes."
-            echo "1) Commit changes"
-            echo "2) Stash changes"
-            echo "3) Continue with uncommitted changes (not recommended)"
-            echo "4) Cancel operation"
-            read -p "Choose an option (1-4): " choice
-            case "$choice" in
-                1)
-                    if ! git add -A; then
-                        handle_error "Failed to stage changes."
-                        return 1
-                    fi
-                    commit_message=""
-                    if ! generate_smart_commit_message; then
-                        while true; do
-                            read -p "Enter your commit message: " commit_message
-                            if [ -n "$commit_message" ]; then
-                                break
-                            else
-                                echo "Commit message cannot be empty. Please try again."
-                            fi
-                        done
-                    fi
-                    if ! git commit -m "$commit_message"; then
-                        handle_error "Failed to commit changes."
-                        return 1
-                    fi
-                    ;;
-                2)
-                    if ! git stash save "Automatic stash by gish script"; then
-                        handle_error "Failed to stash changes."
-                        return 1
-                    fi
-                    echo "Changes stashed."
-                    ;;
-                3)
-                    echo "Warning: Proceeding with uncommitted changes."
-                    ;;
-                4)
-                    echo "Operation cancelled."
-                    return 1
-                    ;;
-                *)
-                    echo "Invalid option. Operation cancelled."
-                    return 1
-                    ;;
-            esac
-        fi
-    }
-
-    safe_checkout() {
-        target_branch="$1"
-        current_branch=$(git rev-parse --abbrev-ref HEAD)
-        if [ "$current_branch" != "$target_branch" ]; then
-            if ! check_uncommitted_changes; then
-                return 1
-            fi
-            if ! git checkout "$target_branch"; then
-                handle_error "Failed to checkout branch $target_branch."
-                return 1
-            fi
-            echo "Switched to branch $target_branch."
-        else
-            echo "Already on branch $target_branch."
-        fi
-    }
-
     current_branch=$(git rev-parse --abbrev-ref HEAD)
     echo "Current branch: $current_branch"
     git status
 
+    # 未ステージの変更を確認
     if ! git diff-index --quiet HEAD --; then
-        read -p "You have unstaged changes. Do you want to stage all changes? (y/N): " stage_confirm
-        if [[ $stage_confirm =~ ^[Yy]$ ]]; then
+        echo "You have unstaged changes. Choose an option:"
+        echo "1) Stage all changes"
+        echo "2) Cancel operation"
+        read -p "Enter your choice (1-2): " stage_choice
+        case "$stage_choice" in
+            1)
+                if ! git add -A; then
+                    handle_error "Failed to stage changes."
+                    return 1
+                fi
+                ;;
+            2)
+                echo "Operation cancelled."
+                return 1
+                ;;
+            *)
+                echo "Invalid choice. Operation cancelled."
+                return 1
+                ;;
+        esac
+    fi
+
+    # ターゲットブランチの選択
+    echo "Select target branch:"
+    echo "1) Current branch ($current_branch)"
+    echo "2) Existing branch"
+    echo "3) New branch"
+    read -p "Enter your choice (1-3): " branch_choice
+
+    case "$branch_choice" in
+        1)
+            target_branch="$current_branch"
+            ;;
+        2)
+            branches=$(git branch | sed 's/^* //g' | sort)
+            PS3="Select branch (enter number): "
+            select branch in $branches; do
+                if [ -n "$branch" ]; then
+                    target_branch="$branch"
+                    break
+                fi
+            done
+            ;;
+        3)
+            read -p "Enter new branch name: " new_branch
+            # 新しいブランチを作成し、必ず切り替える
+            if ! git checkout -b "$new_branch"; then
+                handle_error "Failed to create and checkout new branch $new_branch."
+                return 1
+            fi
+            echo "New branch created and switched to $new_branch."
+            target_branch="$new_branch"
+            ;;
+        *)
+            echo "Invalid choice. Exiting."
+            return 1
+            ;;
+    esac
+
+    if [ "$target_branch" != "$current_branch" ]; then
+        # 変更をスタッシュ
+        if ! git stash push -m "gish-stash"; then
+            handle_error "Failed to stash changes."
+            return 1
+        fi
+
+        # ターゲットブランチに切り替え
+        if ! git checkout "$target_branch"; then
+            handle_error "Failed to checkout branch $target_branch."
+            return 1
+        fi
+        echo "Switched to branch $target_branch."
+
+        # スタッシュを適用
+        if ! git stash pop; then
+            handle_error "Failed to apply stashed changes."
+            return 1
+        fi
+
+        # ステージング（必要であれば）
+        if ! git diff-index --quiet HEAD --; then
             if ! git add -A; then
                 handle_error "Failed to stage changes."
                 return 1
             fi
-        else
-            echo "Operation cancelled. Changes are not staged."
-            return 1
         fi
     fi
 
-    read -p "Changes have been staged. Proceed with commit? (y/N): " proceed
-    case "$proceed" in
-        [yY]*)
-            commit_message=""
-            if ! generate_smart_commit_message; then
-                while true; do
-                    read -p "Enter your commit message: " commit_message
-                    if [ -n "$commit_message" ]; then
-                        break
-                    else
-                        echo "Commit message cannot be empty. Please try again."
-                    fi
-                done
-            fi
-            if ! git commit -m "$commit_message"; then
-                handle_error "Failed to commit changes."
-                return 1
-            fi
-
-            echo "Select target branch:"
-            echo "1) Current branch ($current_branch)"
-            echo "2) Existing branch"
-            echo "3) New branch"
-            read -p "Enter your choice (1-3): " branch_choice
-
-            case "$branch_choice" in
-                1)
-                    target_branch="$current_branch"
-                    ;;
-                2)
-                    branches=$(git branch | sed 's/^* //g' | sort)
-                    PS3="Select branch (enter number): "
-                    select branch in $branches; do
-                        if [ -n "$branch" ]; then
-                            target_branch="$branch"
-                            break
-                        fi
-                    done
-                    if ! safe_checkout "$target_branch"; then
-                        return 1
-                    fi
-                    ;;
-                3)
-                    read -p "Enter new branch name: " new_branch
-                    read -p "Branch '$new_branch' will be created. Switch to new branch '$new_branch'? (y/N): " switch_choice
-                    if [[ $switch_choice =~ ^[Yy]$ ]]; then
-                        if ! git checkout -b "$new_branch"; then
-                            handle_error "Failed to create and checkout new branch $new_branch."
-                            return 1
-                        fi
-                        echo "New branch created, switched to new branch $new_branch."
-                    else
-                        if ! git branch "$new_branch"; then
-                            handle_error "Failed to create new branch $new_branch."
-                            return 1
-                        fi
-                        echo "New branch $new_branch created without switching. You are still on $current_branch."
-                    fi
-                    target_branch="$new_branch"
-                    ;;
-                *)
-                    echo "Invalid choice. Exiting."
-                    return 1
-                    ;;
-            esac
-
-            read -p "Push changes to $target_branch? (y/N): " push_confirm
-            if [[ $push_confirm =~ ^[Yy]$ ]]; then
-                if ! git push origin "$target_branch"; then
-                    handle_error "Push to $target_branch failed. Check your connection or remote settings."
-                    return 1
+    # コミットの確認と実行
+    read -p "Proceed with commit on $target_branch? (y/N): " proceed
+    if [[ $proceed =~ ^[Yy]$ ]]; then
+        commit_message=""
+        if ! generate_smart_commit_message; then
+            while true; do
+                read -p "Enter your commit message: " commit_message
+                if [ -n "$commit_message" ]; then
+                    break
+                else
+                    echo "Commit message cannot be empty. Please try again."
                 fi
-                echo "Push to $target_branch successful."
-            else
-                echo "Push cancelled."
-            fi
-            ;;
-        *)
-            echo "Operation cancelled. Changes are not committed."
-            ;;
-    esac
+            done
+        fi
+
+        if ! git commit -m "$commit_message"; then
+            handle_error "Failed to commit changes on $target_branch."
+            return 1
+        fi
+    else
+        echo "Operation cancelled. Changes are not committed."
+        return 1
+    fi
+
+    # プッシュの確認と実行
+    read -p "Push changes to $target_branch? (y/N): " push_confirm
+    if [[ $push_confirm =~ ^[Yy]$ ]]; then
+        if ! git push origin "$target_branch"; then
+            handle_error "Push to $target_branch failed. Check your connection or remote settings."
+            return 1
+        fi
+        echo "Push to $target_branch successful."
+    else
+        echo "Push cancelled."
+    fi
+
+    # 元のブランチに戻る（必要であれば）
+    if [ "$target_branch" != "$current_branch" ]; then
+        if ! git checkout "$current_branch"; then
+            handle_error "Failed to switch back to branch $current_branch."
+            return 1
+        fi
+        echo "Switched back to branch $current_branch."
+    fi
 
     echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
     return 0  # success response
 }
 
-# 引数チェック
+# 引数チェック（変更なし）
 case "$1" in
     --help)
         show_help
