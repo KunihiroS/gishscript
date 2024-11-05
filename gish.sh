@@ -262,10 +262,12 @@ gish() {
                     select branch in $branches; do
                         if [ -n "$branch" ]; then
                             target_branch="$branch"
+                            safe_checkout "$target_branch"
                             break
+                        else
+                            echo "Invalid selection. Please try again."
                         fi
                     done
-                    safe_checkout "$target_branch"
                     ;;
                 3)
                     read -p "Enter new branch name: " new_branch
