@@ -257,7 +257,7 @@ gish() {
                     target_branch="$current_branch"
                     ;;
                 2)
-                    branches=$(git branch | sed 's/^* //g' | sort)
+                    branches=$(git branch --list | sed 's/^* //g' | sort)
                     PS3="Select branch (enter number): "
                     select branch in $branches; do
                         if [ -n "$branch" ]; then
