@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.2.8"
+    echo "ver: 1.3.1"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -141,9 +141,7 @@ case "$1" in
         ;;
     --s)
         stash_name="$2"  # Capture the second argument (stash name)
-
         stash_and_apply "$stash_name"  # Pass it to the function
-
         ;;
     --l)
         apply_stash_rollback
@@ -152,8 +150,8 @@ case "$1" in
         easy_pull
         ;;
     "")
-    # Suppress "command not found" error while maintaining functionality
-    # This is a workaround for the function definition order issue
+        # Suppress "command not found" error while maintaining functionality
+        # This is a workaround for the function definition order issue
         (gish) 2>/dev/null
         ;;
     *)
@@ -164,24 +162,63 @@ esac
 
 # gish main
 gish() {
-    check_uncommitted_changes() {
-        if ! git diff-index --quiet HEAD --; then
-            echo "Warning: You have uncommitted changes."
-            echo "1) Commit changes"
-            echo "2) Stash changes"
-            echo "3) Continue with uncommitted changes (not recommended)"
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    echo "Current branch: $current_branch"
+    git status
+
+    read -p "Proceed with changes? (y/N): " proceed
+    case "$proceed" in
+        [yY]*)
+            echo "Select action for changes:"
+            echo "1) Commit to current branch ($current_branch)"
+            echo "2) Commit to existing branch"
+            echo "3) Create and commit to new branch"
             echo "4) Cancel operation"
-            read -p "Choose an option (1-4): " choice
-            case "$choice" in
-                1)
+            
+            read -p "Enter your choice (1-4): " branch_choice
+
+            case "$branch_choice" in
+                1|2|3)
+                    # タイムスタンプベースの自動stash
+                    stash_name="gish_auto_$(date +%Y%m%d_%H%M%S)"
+                    echo "Temporarily preserving changes..."
+                    git stash push -m "$stash_name"
+
+                    # 選択に応じたブランチ処理
+                    case "$branch_choice" in
+                        1)
+                            target_branch="$current_branch"
+                            ;;
+                        2)
+                            branches=$(git branch --list | sed 's/^* //g' | sort)
+                            PS3="Select branch (enter number): "
+                            select branch in $branches; do
+                                if [ -n "$branch" ]; then
+                                    git checkout "$branch"
+                                    target_branch="$branch"
+                                    break
+                                fi
+                            done
+                            ;;
+                        3)
+                            read -p "Enter new branch name: " new_branch
+                            git checkout -b "$new_branch"
+                            target_branch="$new_branch"
+                            ;;
+                    esac
+
+                    # 変更を復元
+                    git stash pop
+
+                    # Add and commit changes
                     git add -A
                     commit_message=""
                     generate_smart_commit_message
                     if [ $? -ne 0 ] || [ -z "$commit_message" ]; then
                         while true; do
-                            read -p "Enter your commit message: " commit_message
-                            if [ -n "$commit_message" ]; then
-                                git commit -m "$commit_message"
+                            read -p "Enter your commit message: " msg
+                            if [ -n "$msg" ]; then
+                                git commit -m "$msg"
                                 break
                             else
                                 echo "Commit message cannot be empty. Please try again."
@@ -190,113 +227,27 @@ gish() {
                     else
                         git commit -m "$commit_message"
                     fi
-                    ;;
-                2)
-                    git stash save "Automatic stash by gish script"
-                    echo "Changes stashed."
-                    ;;
-                3)
-                    echo "Warning: Proceeding with uncommitted changes."
+
+                    read -p "Push changes to $target_branch? (y/N): " push_confirm
+                    if [[ $push_confirm =~ ^[Yy]$ ]]; then
+                        if git push origin "$target_branch"; then
+                            echo "Push to $target_branch successful."
+                        else
+                            echo "Push to $target_branch failed. Check your connection or remote settings."
+                        fi
+                    else
+                        echo "Push cancelled."
+                    fi
                     ;;
                 4)
                     echo "Operation cancelled."
                     return 1
                     ;;
                 *)
-                    echo "Invalid option. Operation cancelled."
-                    return 1
-                    ;;
-            esac
-        fi
-    }
-
-    safe_checkout() {
-        target_branch="$1"
-        current_branch=$(git rev-parse --abbrev-ref HEAD)
-        if [ "$current_branch" != "$target_branch" ]; then
-            check_uncommitted_changes || return 1
-            git checkout "$target_branch"
-            echo "Switched to branch $target_branch."
-        else
-            echo "Already on branch $target_branch."
-        fi
-    }
-
-    current_branch=$(git rev-parse --abbrev-ref HEAD)
-    echo "Current branch: $current_branch"
-    git status
-
-    read -p "Changes have been staged. Proceed with commit? (y/N): " proceed
-    case "$proceed" in
-        [yY]*)
-            git add -A
-            commit_message=""
-            generate_smart_commit_message
-            if [ $? -ne 0 ] || [ -z "$commit_message" ]; then
-                while true; do
-                    read -p "Enter your commit message: " msg
-                    if [ -n "$msg" ]; then
-                        git commit -m "$msg"
-                        break
-                    else
-                        echo "Commit message cannot be empty. Please try again."
-                    fi
-                done
-            else
-                git commit -m "$commit_message"
-            fi
-
-            echo "Select target branch:"
-            echo "1) Current branch ($current_branch)"
-            echo "2) Existing branch"
-            echo "3) New branch"
-            read -p "Enter your choice (1-3): " branch_choice
-
-            case "$branch_choice" in
-                1)
-                    target_branch="$current_branch"
-                    ;;
-                2)
-                    branches=$(git branch --list | sed 's/^* //g' | sort)
-                    PS3="Select branch (enter number): "
-                    select branch in $branches; do
-                        if [ -n "$branch" ]; then
-                            target_branch="$branch"
-                            safe_checkout "$target_branch"
-                            break
-                        else
-                            echo "Invalid selection. Please try again."
-                        fi
-                    done
-                    ;;
-                3)
-                    read -p "Enter new branch name: " new_branch
-                    read -p "Branch '$new_branch' will be created. Switch to new branch '$new_branch'? (y/N): " switch_choice
-                    if [[ $switch_choice =~ ^[Yy]$ ]]; then
-                        git checkout -b "$new_branch"
-                        echo "New branch created, switched to new branch $new_branch."
-                    else
-                        git branch "$new_branch"
-                        echo "New branch $new_branch created without switching. You are still on $current_branch."
-                    fi
-                    target_branch="$new_branch"
-                    ;;
-                *)
                     echo "Invalid choice. Exiting."
                     return 1
                     ;;
             esac
-
-            read -p "Push changes to $target_branch? (y/N): " push_confirm
-            if [[ $push_confirm =~ ^[Yy]$ ]]; then
-                if git push origin "$target_branch"; then
-                    echo "Push to $target_branch successful."
-                else
-                    echo "Push to $target_branch failed. Check your connection or remote settings."
-                fi
-            else
-                echo "Push cancelled."
-            fi
             ;;
         *)
             echo "Operation cancelled. Changes are not committed."

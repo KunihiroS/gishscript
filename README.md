@@ -5,11 +5,13 @@ A powerful and user-friendly Bash script that simplifies common Git operations, 
 
 ## Version
 
-1.2.8
+See source code.
 
 ## Recent topic
 
-- --s option with empty name is allowed and add "yyyymmddhhmmss"
+- update the code from 1.2.8 branch
+   Change the timing of branch select from after commit to before commit.
+   Add stash function before proceed gish process to save the changes on the code.
 
 ## Features:
 
