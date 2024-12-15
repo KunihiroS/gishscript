@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.3.1"
+    echo "ver: 1.3.3"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -99,19 +99,22 @@ easy_pull() {
     exit 0  # スクリプトを終了する
 }
 
+# スクリプトの場所を取得
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+TOOLS_DIR="${SCRIPT_DIR}/gish-tools"
+VENV_PYTHON="${TOOLS_DIR}/venv/bin/python3"
+COMMIT_MESSAGE_SCRIPT="${TOOLS_DIR}/generate_commit_message.py"
+
 generate_smart_commit_message() {
-    if command -v python3 &> /dev/null; then
-        python_cmd="python3"
-    elif command -v python &> /dev/null; then
-        python_cmd="python"
-    else
-        echo "Error: Neither python3 nor python found in PATH. Falling back to manual entry."
+    # Python仮想環境とスクリプトの存在確認
+    if [ ! -f "$VENV_PYTHON" ] || [ ! -f "$COMMIT_MESSAGE_SCRIPT" ]; then
+        echo "AI commit message generation not available. Using manual input."
         commit_message=""
         return 1
     fi
 
     echo "Generating commit message with AI... please wait."
-    commit_message=$($python_cmd /home/kunihiros/dev/aider/projects/gishscript/generate_commit_message.py 2>&1)
+    commit_message=$("$VENV_PYTHON" "$COMMIT_MESSAGE_SCRIPT" 2>&1)
     if [ $? -eq 0 ]; then
         echo "Generated commit message: $commit_message"
         read -p "Is this commit message okay? [y/N]: " user_confirmation
@@ -133,6 +136,7 @@ generate_smart_commit_message() {
         return 1
     fi
 }
+
 
 # arg check
 case "$1" in
@@ -190,25 +194,83 @@ gish() {
                             target_branch="$current_branch"
                             ;;
                         2)
-                            branches=$(git branch --list | sed 's/^* //g' | sort)
-                            PS3="Select branch (enter number): "
-                            select branch in $branches; do
-                                if [ -n "$branch" ]; then
-                                    git checkout "$branch"
-                                    target_branch="$branch"
+                            # 既存のブランチ一覧を取得して表示
+                            branches=($(git branch --list | sed 's/^* //g' | sort))
+                            if [ ${#branches[@]} -eq 0 ]; then
+                                echo "No branches found."
+                                return 1
+                            fi
+                            
+                            echo "Available branches:"
+                            echo "0) Cancel operation"
+                            for i in "${!branches[@]}"; do
+                                echo "$((i+1))) ${branches[i]}"
+                            done
+
+                            while true; do
+                                read -p "Select branch number (0 to cancel): " branch_num
+                                if [ "$branch_num" = "0" ]; then
+                                    echo "Operation cancelled."
+                                    git stash pop  # 変更を元に戻す
+                                    return 1
+                                elif [ "$branch_num" -gt 0 ] && [ "$branch_num" -le "${#branches[@]}" ]; then
+                                    target_branch="${branches[$((branch_num-1))]}"
+                                    
+                                    # 強制上書きの確認
+                                    echo "Warning: This will completely overwrite the contents of branch '$target_branch'."
+                                    read -p "Are you sure to proceed? This process will execute complete overwrite of the existing branch you selected. (y/N): " force_confirm
+                                    if [[ ! $force_confirm =~ ^[Yy]$ ]]; then
+                                        echo "Operation cancelled."
+                                        git stash pop  # 変更を元に戻す
+                                        return 1
+                                    fi
+                                    
+                                    # 確認後、強制的にブランチを更新
+                                    git checkout -B "$target_branch"
+                                    echo "Branch $target_branch has been updated."
                                     break
+                                else
+                                    echo "Invalid selection. Please try again."
                                 fi
                             done
                             ;;
                         3)
                             read -p "Enter new branch name: " new_branch
-                            git checkout -b "$new_branch"
+                            original_branch="$current_branch"  # 元のブランチ名を保存
+                            
+                            # 新規ブランチ作成
+                            if ! git checkout -b "$new_branch"; then
+                                echo "Failed to create new branch."
+                                git stash pop  # stashを戻す
+                                return 1
+                            fi
                             target_branch="$new_branch"
+
+                            # 変更を復元
+                            if ! git stash pop; then
+                                echo "Failed to restore changes."
+                                git checkout "$original_branch"  # 元のブランチに戻る
+                                git branch -D "$new_branch"      # 作成したブランチを削除
+                                echo "Rolled back to original state."
+                                return 1
+                            fi
+
+                            read -p "Proceed with commit? (y/N): " commit_confirm
+                            if [[ ! $commit_confirm =~ ^[Yy]$ ]]; then
+                                echo "Operation cancelled."
+                                git checkout "$original_branch"  # 元のブランチに戻る
+                                git branch -D "$new_branch"      # 作成したブランチを削除
+                                echo "New branch '$new_branch' has been deleted."
+                                echo "Rolled back to original state."
+                                return 1
+                            fi
                             ;;
                     esac
 
-                    # 変更を復元
-                    git stash pop
+                    # 選択1,2の場合のstash pop
+                    if [ "$branch_choice" != "3" ]; then
+                        git stash pop
+                    fi
 
                     # Add and commit changes
                     git add -A
