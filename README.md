@@ -143,17 +143,39 @@ Gish は、Git 操作を合理化し、安全に実行するように設計さ�
 
 - このパスがスクリプトを正しく指していることを確認して、実行エラーを回避してください。
 
+#### requirements.txt
+
+openai>=1.0.0
+python-dotenv>=0.19.0
+
 #### 仮想環境
 
 - Python スクリプトの実行には、仮想環境を使用します。
 - 仮想環境は、`gish-tools/venv` に作成してください。
-- 仮想環境を有効化するには、`.bashrc` または `.zshrc` に以下のコードを追加してください。
-
-```bash# gish-tools venv を有効化if [ -d "$HOME/.local/bin/gish-tools/venv" ]; then    if [ -z "$VIRTUAL_ENV" ] || [ "$VIRTUAL_ENV" != "$HOME/.local/bin/gish-tools/venv" ]; then        source "$HOME/.local/bin/gish-tools/venv/bin/activate"        echo "gish-tools venv activated."    fifi```
+  cd /usr/local/bin/gish-tools
+  python3 -m venv venv
+  source venv/bin/activate
+  pip install -r requirements.txt
+- 新しくBashターミナル作成時にgish-toolsの仮想環境を有効化するには、`.bashrc` または `.zshrc` に以下のコードを追加してください。
+```
+if [ -d "$HOME/.local/bin/gish-tools/venv" ]; then
+    if [ -z "$VIRTUAL_ENV" ] || [ "$VIRTUAL_ENV" != "$HOME/.local/bin/gish-tools/venv" ]; then
+        source "$HOME/.local/bin/gish-tools/venv/bin/activate"
+        echo "gish-tools venv activated."
+    fi
+fi
+```
 
 ### ファイル構成
-
-```/usr/local/bin/          # システム全体で使用├── gish                 # メインのシェルスクリプト└── gish-tools/         # gish関連のツール用ディレクトリ    ├── generate_commit_message.py    ├── requirements.txt    ├── .env    └── venv/            # Python 仮想環境```
+```
+/usr/local/bin/
+├── gish                    # メインのシェルスクリプト
+└── gish-tools/            # gish関連のツール用ディレクトリ
+    ├── generate_commit_message.py
+    ├── requirements.txt
+    ├── .env
+    └── venv/              # Python 仮想環境
+```
 
 ### トラブルシューティング
 
