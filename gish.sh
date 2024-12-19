@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.3.3"
+    echo "ver: 1.3.4"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -29,6 +29,11 @@ show_help() {
     echo
     exit 0
 }
+
+# 仮想環境を有効化
+if [ -d "$HOME/.local/bin/gish-tools/venv" ]; then
+    source "$HOME/.local/bin/gish-tools/venv/bin/activate"
+fi
 
 # stash save "name" -> stash apply stash@{0}
 stash_and_apply() {
