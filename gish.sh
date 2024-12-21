@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.3.4"
+    echo "ver: 1.3.5"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -13,7 +13,7 @@ show_help() {
     echo "Options:"
     echo "  --s <name>    Save and apply a stash with the specified name. no space acceptable"
     echo "  --l           Save and rollback to stash@{0}, deleting all changes after it."
-    echo "  --p           Easy pull from a remote repository, discarding all local changes."
+    echo "  --p           Easy pull from a remote repository, discarding all local changes and then move to targeted branch."
     echo "  --help        Display this help and exit."
     echo
     echo "Examples:"
@@ -90,8 +90,21 @@ easy_pull() {
             if [ -n "$branch" ]; then
                 read -p "Final confirmation, are you sure to rollback? [y/N] " final_confirm
                 if [[ $final_confirm =~ ^[Yy]$ ]]; then
+                    # Reset to the remote branch state
                     git reset --hard "origin/$branch"
                     echo "Rolled back to remote branch '$branch'."
+                    
+                    # Checkout to the selected branch
+                    if git checkout "$branch"; then
+                        echo "Switched to branch '$branch'"
+                    else
+                        echo "Warning: Failed to switch to branch '$branch'. Creating new branch..."
+                        if git checkout -b "$branch"; then
+                            echo "Created and switched to new branch '$branch'"
+                        else
+                            echo "Error: Failed to create and switch to branch '$branch'"
+                        fi
+                    fi
                 else
                     echo "Operation cancelled."
                 fi
