@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.3.5"
+    echo "ver: 1.3.6"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -85,8 +85,11 @@ easy_pull() {
     read -p "Easy pull from remote repo anyway? *CAUTION: All rollback to remote repo condition, your modify will be deleted. [y/N] " confirm
     if [[ $confirm =~ ^[Yy]$ ]]; then
         git fetch --all
+        # 現在のブランチ名を取得
+        current_branch=$(git rev-parse --abbrev-ref HEAD)
         PS3="Select branch to pull: "
-        select branch in $(git branch -r | grep -v '\->' | grep -v "HEAD" | sed 's/origin\///'); do
+        # 現在のブランチを除外してリスト表示
+        select branch in $(git branch -r | grep -v '\->' | grep -v "HEAD" | sed 's/origin\///' | grep -v "^${current_branch}$"); do
             if [ -n "$branch" ]; then
                 read -p "Final confirmation, are you sure to rollback? [y/N] " final_confirm
                 if [[ $final_confirm =~ ^[Yy]$ ]]; then
@@ -114,7 +117,7 @@ easy_pull() {
     else
         echo "Operation cancelled."
     fi
-    exit 0  # スクリプトを終了する
+    exit 0
 }
 
 # スクリプトの場所を取得
@@ -212,13 +215,13 @@ gish() {
                             target_branch="$current_branch"
                             ;;
                         2)
-                            # 既存のブランチ一覧を取得して表示
-                            branches=($(git branch --list | sed 's/^* //g' | sort))
+                            # 既存のブランチ一覧を取得して表示（現在のブランチを除外）
+                            branches=($(git branch --list | sed 's/^* //g' | grep -v "^${current_branch}$" | sort))
                             if [ ${#branches[@]} -eq 0 ]; then
-                                echo "No branches found."
+                                echo "No other branches found."
                                 return 1
                             fi
-                            
+
                             echo "Available branches:"
                             echo "0) Cancel operation"
                             for i in "${!branches[@]}"; do
