@@ -81,33 +81,70 @@ apply_stash_rollback() {
 }
 
 # reset --hard -> pull origin {branch}
+# easy_pull function
 easy_pull() {
     read -p "Easy pull from remote repo anyway? *CAUTION: All rollback to remote repo condition, your modify will be deleted. [y/N] " confirm
     if [[ $confirm =~ ^[Yy]$ ]]; then
-        git fetch --all
-        # 現在のブランチ名を取得
+        # Get current branch
         current_branch=$(git rev-parse --abbrev-ref HEAD)
+        
+        # Fetch all remote branches
+        echo "Fetching remote repository information..."
+        if ! git fetch --all --prune; then
+            echo "Error: Failed to fetch remote repository information."
+            exit 1
+        fi
+
+        # Get list of remote branches (excluding current branch)
+        echo "Loading remote branches..."
         PS3="Select branch to pull: "
-        # 現在のブランチを除外してリスト表示
-        select branch in $(git branch -r | grep -v '\->' | grep -v "HEAD" | sed 's/origin\///' | grep -v "^${current_branch}$"); do
+        mapfile -t remote_branches < <(git branch -r | \
+            grep '^  origin/' | \
+            grep -v '/HEAD' | \
+            sed 's#  origin/##' | \
+            grep -v "^${current_branch}\$" | \
+            sort -u)
+
+        if [ ${#remote_branches[@]} -eq 0 ]; then
+            echo "No other remote branches available."
+            exit 1
+        fi
+
+        # Display branch selection
+        echo "Current branch: $current_branch (excluded from list)"
+        select branch in "${remote_branches[@]}"; do
             if [ -n "$branch" ]; then
-                read -p "Final confirmation, are you sure to rollback? [y/N] " final_confirm
+                # Validate branch name
+                if [[ "$branch" == "HEAD" ]]; then
+                    echo "Invalid branch selection."
+                    exit 1
+                fi
+
+                read -p "Final confirmation - This will delete all local changes and switch to branch '$branch'. Continue? [y/N] " final_confirm
                 if [[ $final_confirm =~ ^[Yy]$ ]]; then
-                    # Reset to the remote branch state
-                    git reset --hard "origin/$branch"
-                    echo "Rolled back to remote branch '$branch'."
-                    
-                    # Checkout to the selected branch
-                    if git checkout "$branch"; then
-                        echo "Switched to branch '$branch'"
-                    else
-                        echo "Warning: Failed to switch to branch '$branch'. Creating new branch..."
-                        if git checkout -b "$branch"; then
-                            echo "Created and switched to new branch '$branch'"
-                        else
-                            echo "Error: Failed to create and switch to branch '$branch'"
+                    echo "Switching to remote branch '$branch'..."
+
+                    # まずチェックアウトを試みる
+                    if ! git checkout "$branch" 2>/dev/null; then
+                        # ローカルブランチが存在しない場合は新規作成
+                        if ! git checkout -b "$branch" --track "origin/$branch"; then
+                            echo "Error: Failed to create branch '$branch'"
+                            exit 1
                         fi
                     fi
+
+                    # 確実にリモートの状態にリセット
+                    if ! git reset --hard "origin/$branch"; then
+                        echo "Error: Failed to reset to origin/$branch"
+                        exit 1
+                    fi
+
+                    echo "Successfully switched to remote branch '$branch'"
+                    echo "Current branch is now: $(git rev-parse --abbrev-ref HEAD)"
+                    echo "Branch is exactly at remote state"
+                    
+                    # 確認のため状態を表示
+                    git status
                 else
                     echo "Operation cancelled."
                 fi
