@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.3.6"
+    echo "ver: 1.3.8"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -253,7 +253,13 @@ gish() {
                             ;;
                         2)
                             # 既存のブランチ一覧を取得して表示（現在のブランチを除外）
-                            branches=($(git branch --list | sed 's/^* //g' | grep -v "^${current_branch}$" | sort))
+                            mapfile -t branches < <(git branch -r | \
+                                grep '^  origin/' | \
+                                grep -v '/HEAD' | \
+                                sed 's#  origin/##' | \
+                                grep -v "^${current_branch}$" | \
+                                sort -u)
+
                             if [ ${#branches[@]} -eq 0 ]; then
                                 echo "No other branches found."
                                 return 1
@@ -275,16 +281,20 @@ gish() {
                                     target_branch="${branches[$((branch_num-1))]}"
                                     
                                     # 強制上書きの確認
-                                    echo "Warning: This will completely overwrite the contents of branch '$target_branch'."
-                                    read -p "Are you sure to proceed? This process will execute complete overwrite of the existing branch you selected. (y/N): " force_confirm
+                                    echo "Warning: This will completely overwrite the remote branch '$target_branch'."
+                                    read -p "Are you sure to proceed? This process will execute complete overwrite of the selected branch. (y/N): " force_confirm
                                     if [[ ! $force_confirm =~ ^[Yy]$ ]]; then
                                         echo "Operation cancelled."
                                         git stash pop  # 変更を元に戻す
                                         return 1
                                     fi
                                     
-                                    # 確認後、強制的にブランチを更新
-                                    git checkout -B "$target_branch"
+                                    # 強制的にブランチを切り替え
+                                    if ! git checkout -B "$target_branch"; then
+                                        echo "Failed to switch branch."
+                                        git stash pop
+                                        return 1
+                                    fi
                                     echo "Branch $target_branch has been updated."
                                     break
                                 else
@@ -292,6 +302,7 @@ gish() {
                                 fi
                             done
                             ;;
+
                         3)
                             read -p "Enter new branch name: " new_branch
                             original_branch="$current_branch"  # 元のブランチ名を保存
@@ -350,7 +361,7 @@ gish() {
 
                     read -p "Push changes to $target_branch? (y/N): " push_confirm
                     if [[ $push_confirm =~ ^[Yy]$ ]]; then
-                        if git push origin "$target_branch"; then
+                        if git push --force origin "$target_branch"; then
                             echo "Push to $target_branch successful."
                         else
                             echo "Push to $target_branch failed. Check your connection or remote settings."
