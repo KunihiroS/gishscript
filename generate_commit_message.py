@@ -8,6 +8,7 @@ import os
 import json
 from pathlib import Path
 from dotenv import load_dotenv
+import traceback  # スタックトレースを記録するために追加
 
 # スクリプトのディレクトリを取得
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -16,9 +17,10 @@ SCRIPT_DIR = Path(__file__).parent.absolute()
 LOG_FILE = SCRIPT_DIR / "gish.log"
 logging.basicConfig(
     filename=str(LOG_FILE),
-    level=logging.CRITICAL,
+    level=logging.DEBUG,  # デフォルトをDEBUGレベルに変更
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
 
 # .envファイルの読み込み（同じディレクトリにある.envを探す）
 env_path = SCRIPT_DIR / ".env"
@@ -29,19 +31,21 @@ api_key = os.getenv("OPENAI_API_KEY")
 
 if not api_key:
     logging.error("OpenAI API key not found.")
-    print("Error: OpenAI API key not found. Please set it in the .env file at: " + str(env_path))
+    print("Error: OpenAI API key not found. Please set it in the .env file at: " + str(env_path), file=sys.stderr)
     sys.exit(1)
 
 # OpenAI クライアントの初期化
 try:
     client = OpenAI(api_key=api_key)
+    logging.info("OpenAI client initialized successfully.")
 except Exception as e:
     logging.error(f"Failed to initialize OpenAI client: {e}")
-    print("Error: Failed to initialize OpenAI client.")
+    print("Error: Failed to initialize OpenAI client.", file=sys.stderr)
     sys.exit(1)
 
 def get_git_diff():
     """Gitの差分を取得する"""
+    logging.info("Starting get_git_diff function.")
     try:
         result = subprocess.run(
             ["git", "diff", "--cached"],
@@ -49,24 +53,28 @@ def get_git_diff():
             text=True,
             check=True
         )
+        logging.debug(f"Git diff output:\n{result.stdout}")
+        logging.info("Successfully retrieved git diff.")
         return result.stdout
     except subprocess.CalledProcessError as e:
         logging.error(f"Git diff command failed: {e}")
-        print("Error: Unable to retrieve git diff.")
+        print("Error: Unable to retrieve git diff.", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
-        logging.error(f"Unexpected error occurred while getting git diff: {e}")
-        print("Error: An unexpected error occurred while getting git diff.")
+        logging.error(f"Unexpected error occurred while getting git diff: {e}\n{traceback.format_exc()}")
+        print("Error: An unexpected error occurred while getting git diff.", file=sys.stderr)
         sys.exit(1)
 
 def generate_commit_message(diff_content):
     """OpenAI APIを使用してコミットメッセージを生成する"""
+    logging.info("Starting generate_commit_message function.")
     if not diff_content.strip():
         logging.warning("Empty diff content")
-        print("No changes detected to generate commit message for.")
+        print("No changes detected to generate commit message for.", file=sys.stderr)
         sys.exit(1)
 
     try:
+        logging.debug("Calling OpenAI API...")
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -91,14 +99,14 @@ def generate_commit_message(diff_content):
         return commit_message
 
     except Exception as e:
-        logging.error(f"Failed to generate commit message: {e}")
-        print(f"Error: Failed to generate commit message: {str(e)}")
+        logging.error(f"Failed to generate commit message: {e}\n{traceback.format_exc()}")
+        print(f"Error: Failed to generate commit message: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
 def main():
     """メイン処理"""
+    logging.info("Starting main function.")
     try:
-        logging.info("Starting commit message generation process.")
         diff_content = get_git_diff()
         if not diff_content:
             logging.info("No changes detected to commit.")
@@ -110,9 +118,11 @@ def main():
         logging.info("Successfully generated and output commit message.")
 
     except Exception as e:
-        logging.error(f"Commit message generation failed: {e}")
-        print(f"Error: {str(e)}")
+        logging.error(f"Commit message generation failed: {e}\n{traceback.format_exc()}")
+        print(f"Error: {str(e)}", file=sys.stderr)
         sys.exit(1)
+
+    logging.info("Main function finished.")
 
 if __name__ == "__main__":
     main()

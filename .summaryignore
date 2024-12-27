@@ -1,0 +1,75 @@
+# 共通の一時ファイルと設定
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.temp
+*.swp
+*~
+LICENSE
+
+# エディタ/IDE の設定ファイル
+.idea/
+.vscode/
+*.sublime-*
+.project
+.settings/
+
+# JavaScript/Node.js 固有
+package-lock.json
+node_modules/
+bower_components/
+dist/
+build/
+coverage/
+.npm/
+.env
+.env.*
+*.min.js
+*.min.css
+*.map
+.svelte-kit/
+
+# Python 固有
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env/
+.venv/
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ドキュメント生成
+docs/_build/
+site/
+_site/
+
+# キャッシュとデータベース
+*.sqlite
+*.db
+.cache/
+
+# ビルド成果物
+*.min.*
+*.bundle.*
+*.chunk.*
