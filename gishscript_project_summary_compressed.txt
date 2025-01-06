@@ -1,5 +1,0 @@
-# gishscript
-
-## Directory Structure
-
-- gishscript/

@@ -76,46 +76,53 @@ Gish は、Git 操作を合理化し、安全に実行するように設計さ�
 
 ### 使用方法
 
-1.  スクリプトを `gish` として次の場所に保存します: `~/.local/bin/gish` (注: ~ はホームディレクトリを表します)。スクリプトに実行権限を付与します:
+1. スクリプトを `gish` として次の場所に保存します: `~/.local/bin/gish` (注: ~ はホームディレクトリを表します)。スクリプトに実行権限を付与します:
 
-    ```bash    chmod +x ~/.local/bin/gish    ```
+    ```bash
+    chmod +x ~/.local/bin/gish
+    ```
 
-2.  `.bashrc` または `.zshrc` に次の行を追加します:
+2. `.bashrc` または `.zshrc` に次の行を追加します:
 
-    ```bash    export PATH="$HOME/.local/bin:$PATH"    alias gish='~/.local/bin/gish "$@"'    ```
+    ```bash
+    export PATH="$HOME/.local/bin:$PATH"
+    alias gish='~/.local/bin/gish "$@"'
+    ```
 
-3.  シェルを再起動するか、次のコマンドを実行して変更を適用します:
+3. シェルを再起動するか、次のコマンドを実行して変更を適用します:
 
-    ```bash    source ~/.bashrc # または source ~/.zshrc    ```
+    ```bash
+    source ~/.bashrc # または source ~/.zshrc
+    ```
 
-4.  Git リポジトリ内で `gish` コマンドを実行します。
+4. Git リポジトリ内で `gish` コマンドを実行します。
 
 ### 操作手順
 
 以下は、メイン機能 (オプションなしの gish) の操作手順です。
 
-1.  `gish` コマンドを実行すると、現在のブランチが表示されます。未コミットの変更がある場合は、次のオプションが表示されます:
+1. `gish` コマンドを実行すると、現在のブランチが表示されます。未コミットの変更がある場合は、次のオプションが表示されます:
     - 変更をコミット
     - 変更を stash
     - 未コミットの変更を続行
     - 操作をキャンセル
 
-2.  変更がステージングされ、`git status` の結果が表示されます。
+2. 変更がステージングされ、`git status` の結果が表示されます。
 
-3.  コミットするかどうかを選択します:
+3. コミットするかどうかを選択します:
     - はいの場合、コミットメッセージが生成され、変更したい場合はコミットメッセージを入力するように求められます。
     - いいえの場合、操作はキャンセルされます。
 
-4.  ターゲットブランチを選択します:
+4. ターゲットブランチを選択します:
     - 現在のブランチ
     - 既存のブランチ
     - 新しいブランチ
 
-5.  選択に応じて、ブランチが切り替えられるか、作成されます。
+5. 選択に応じて、ブランチが切り替えられるか、作成されます。
 
-6.  最後に、選択したブランチにプッシュするかどうかを尋ねられます。
+6. 最後に、選択したブランチにプッシュするかどうかを尋ねられます。
 
-7.  操作が完了すると、現在のブランチが表示されます。
+7. 操作が完了すると、現在のブランチが表示されます。
 
 ### 注意事項
 
@@ -131,44 +138,55 @@ Gish は、Git 操作を合理化し、安全に実行するように設計さ�
 - `.env` ファイルを `generate_commit_message.py` と同じディレクトリに配置します。このファイルには、OpenAI API キーを `OPENAI_API_KEY` として含める必要があります。
 - `.env` ファイルのコンテンツの例:
 
-  ```  OPENAI_API_KEY=your_openai_api_key_here  ```
+  ```
+  OPENAI_API_KEY=your_openai_api_key_here
+  ```
 
 #### Python スクリプトのパス:
 
 - Python スクリプト (`generate_commit_message.py`) が別のディレクトリにある場合は、`gish` スクリプトのパスを更新します:
 
-  ```bash  commit_message=$("$VENV_PYTHON" "$COMMIT_MESSAGE_SCRIPT" 2>&1)  ```
+  ```bash
+  commit_message=$("$VENV_PYTHON" "$COMMIT_MESSAGE_SCRIPT" 2>&1)
+  ```
 
 - このパスがスクリプトを正しく指していることを確認して、実行エラーを回避してください。
 
 #### requirements.txt
 
+```
 openai>=1.0.0
 python-dotenv>=0.19.0
+```
 
 #### 仮想環境
 
 - Python スクリプトの実行には、仮想環境を使用します。
-- 仮想環境は、`gish-tools/venv` に作成してください。
-  cd /usr/local/bin/gish-tools
+- 仮想環境は、`~/.local/bin/gish-tools/venv` に作成してください。
+  ```bash
+  cd ~/.local/bin/gish-tools
   python3 -m venv venv
   source venv/bin/activate
   pip install -r requirements.txt
-- 新しくBashターミナル作成時にgish-toolsの仮想環境を有効化するには、`.bashrc` または `.zshrc` に以下のコードを追加してください。
-```
-if [ -d "$HOME/.local/bin/gish-tools/venv" ]; then
-    if [ -z "$VIRTUAL_ENV" ] || [ "$VIRTUAL_ENV" != "$HOME/.local/bin/gish-tools/venv" ]; then
-        source "$HOME/.local/bin/gish-tools/venv/bin/activate"
+  ```
+- 新しい Bash ターミナル作成時に `gish-tools` の仮想環境を自動的に有効化するには、`.bashrc` または `.zshrc` に以下のコードを追加してください。
+
+```bash
+GISH_TOOLS_PATH="$HOME/.local/bin/gish-tools"
+if [ -d "$GISH_TOOLS_PATH/venv" ]; then
+    if [ -z "$VIRTUAL_ENV" ] || [ "$VIRTUAL_ENV" != "$GISH_TOOLS_PATH/venv" ]; then
+        source "$GISH_TOOLS_PATH/venv/bin/activate"
         echo "gish-tools venv activated."
     fi
 fi
 ```
 
 ### ファイル構成
+
 ```
-/usr/local/bin/
-├── gish                    # メインのシェルスクリプト
-└── gish-tools/            # gish関連のツール用ディレクトリ
+~/.local/bin/
+└── gish                    # メインのシェルスクリプト
+~/.local/bin/gish-tools/            # gish関連のツール用ディレクトリ
     ├── generate_commit_message.py
     ├── requirements.txt
     ├── .env
@@ -179,7 +197,9 @@ fi
 
 - スクリプトを実行できない場合: スクリプトファイルに実行権限があることを確認してください。次のコマンドを実行して権限を付与できます:
 
-  ```bash  chmod +x ~/.local/bin/gish  ```
+  ```bash
+  chmod +x ~/.local/bin/gish
+  ```
 
 - ブランチの切り替えに失敗した場合: 未コミットの変更がないか確認してください。競合がないことを確認してください。
 
