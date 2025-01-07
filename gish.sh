@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.3.9"
+    echo "ver: 1.4.0"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -60,7 +60,6 @@ stash_and_apply() {
          echo "DEBUG: Using stash_name: $stash_name"
     fi
 
-
     # ワーキングツリーに変更があるか確認
     if ! git diff-index --quiet HEAD --; then
         if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -70,7 +69,7 @@ stash_and_apply() {
         echo "No local changes to save"
         exit 0  # スクリプトを終了する
     fi
-    
+
     if ! git stash save "$stash_name" ; then
        echo "Error: Failed to save the stash. Stash name: $stash_name" >&2
         if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -80,10 +79,9 @@ stash_and_apply() {
         exit 1
     fi
     if [[ "$DEBUG_MODE" == "true" ]]; then
-      echo "DEBUG: stash save successful.  Stash name: $stash_name"
+      echo "DEBUG: stash save successful. Stash name: $stash_name"
       git stash list
     fi
-
 
     if ! git stash apply "stash@{0}"; then
         echo "Error: Failed to apply the stash." >&2
@@ -149,7 +147,7 @@ easy_pull() {
     if [[ "$DEBUG_MODE" == "true" ]]; then
        echo "DEBUG: easy_pull function started"
     fi
-    read -p "Easy pull from remote repo anyway? *CAUTION: All rollback to remote repo condition, your modify will be deleted. [y/N] " confirm
+    read -p "Easy pull from remote repo anyway? *CAUTION: All local changes will be discarded and you will be synced with the remote branch. [y/N] " confirm
     if [[ $confirm =~ ^[Yy]$ ]]; then
         # Get current branch
         current_branch=$(git rev-parse --abbrev-ref HEAD)
@@ -191,7 +189,6 @@ easy_pull() {
            echo "DEBUG: Remote branches loaded: ${remote_branches[@]}"
          fi
 
-
         # Display branch selection
         echo "Current branch: $current_branch (excluded from list)"
         select branch in "${remote_branches[@]}"; do
@@ -208,16 +205,40 @@ easy_pull() {
                     echo "DEBUG: selected branch: $branch"
                  fi
 
-                read -p "Final confirmation - This will delete all local changes and switch to branch '$branch'. Continue? [y/N] " final_confirm
+                read -p "Final confirmation - This will DISCARD ALL LOCAL CHANGES and switch to branch '$branch'. Continue? [y/N] " final_confirm
                 if [[ $final_confirm =~ ^[Yy]$ ]]; then
                      if [[ "$DEBUG_MODE" == "true" ]]; then
                       echo "DEBUG: User confirmed to proceed with pull to branch: $branch."
                     fi
+                    echo "Discarding local changes..."
+                    if ! git reset --hard HEAD; then
+                        echo "Error: Failed to discard local changes." >&2
+                        if [[ "$DEBUG_MODE" == "true" ]]; then
+                            echo "DEBUG: Failed to discard local changes."
+                        fi
+                        exit 1
+                    fi
+                    if [[ "$DEBUG_MODE" == "true" ]]; then
+                        echo "DEBUG: Successfully discarded local changes."
+                    fi
+
                     echo "Switching to remote branch '$branch'..."
 
-                    # まずチェックアウトを試みる
-                    if ! git checkout "$branch" 2>/dev/null; then
-                        # ローカルブランチが存在しない場合は新規作成
+                    # ローカルブランチの存在を確認
+                    if git rev-parse --verify "$branch" >/dev/null 2>&1; then
+                        # すでにローカルブランチがあるので checkout
+                        if ! git checkout "$branch"; then
+                            echo "Error: Failed to checkout local branch '$branch'" >&2
+                            if [[ "$DEBUG_MODE" == "true" ]]; then
+                                echo "DEBUG: Failed to checkout local branch '$branch'."
+                            fi
+                            exit 1
+                        fi
+                        if [[ "$DEBUG_MODE" == "true" ]]; then
+                            echo "DEBUG: Successfully checked out existing local branch '$branch'."
+                        fi
+                    else
+                        # ローカルブランチがなければ新規作成
                         if ! git checkout -b "$branch" --track "origin/$branch"; then
                             echo "Error: Failed to create branch '$branch'" >&2
                             if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -226,13 +247,9 @@ easy_pull() {
                             exit 1
                         fi
                         if [[ "$DEBUG_MODE" == "true" ]]; then
-                            echo "DEBUG: created branch '$branch'."
+                            echo "DEBUG: Created new branch '$branch' from remote."
                          fi
                     fi
-                   if [[ "$DEBUG_MODE" == "true" ]]; then
-                       echo "DEBUG: git checkout successful. branch: $branch"
-                   fi
-
 
                     # 確実にリモートの状態にリセット
                     if ! git reset --hard "origin/$branch"; then
@@ -344,9 +361,10 @@ generate_smart_commit_message() {
     fi
 }
 
-
 # arg check
 DEBUG_MODE="false"
+ACTION="" # 実行するアクションを格納する変数
+stash_name="" # stash名を格納する変数を追加
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -355,18 +373,19 @@ while [ "$#" -gt 0 ]; do
         exit 0
         ;;
     --s)
+        ACTION="stash_and_apply"
         shift
-        stash_name="$1"
-        if [[ -z "$stash_name" ]]; then
-            echo "Error: Stash name is required after --s option." >&2
-            exit 1
+        if [ -n "$1" ] && [[ "$1" != -* ]]; then # 次の引数が存在し、オプションでない場合
+            stash_name="$1"
+            shift
         fi
-        shift
         ;;
     --l)
+        ACTION="apply_stash_rollback"
         shift
         ;;
     --p)
+        ACTION="easy_pull"
         shift
         ;;
     --debug)
@@ -383,7 +402,6 @@ done
 # Activate virtual environment
 activate_virtual_env
 
-
 #DEBUG_MODE="true"  # デバッグモードを有効にするには、この行のコメントアウトを解除してください。
 if [[ "$DEBUG_MODE" == "true" ]]; then
   echo "DEBUG MODE ENABLED. Detailed logging enabled."
@@ -392,24 +410,23 @@ if [[ "$DEBUG_MODE" == "true" ]]; then
   set -x # コマンド実行をトレース
 fi
 
-case "$1" in
-    --s)
-        stash_and_apply "$stash_name"  # Pass it to the function
+case "$ACTION" in
+    "stash_and_apply")
+        stash_and_apply "$stash_name"
         ;;
-    --l)
+    "apply_stash_rollback")
         apply_stash_rollback
         ;;
-    --p)
+    "easy_pull")
         easy_pull
         ;;
     "")
-        # Suppress "command not found" error while maintaining functionality
-        # This is a workaround for the function definition order issue
-        (gish) 2>/dev/null
+        # 引数なしの場合のみ gish 関数を実行
+        gish
         ;;
     *)
         if [[ "$DEBUG_MODE" == "true" ]]; then
-           echo "DEBUG: No action matched: $1"
+           echo "DEBUG: No action matched: $ACTION"
         fi
        exit 1
         ;;
@@ -600,7 +617,6 @@ gish() {
                                  echo "DEBUG: git checkout -b $new_branch successful."
                             fi
 
-
                             # 変更を復元
                             if ! git stash pop; then
                                 echo "Failed to restore changes." >&2
@@ -616,7 +632,6 @@ gish() {
                             if [[ "$DEBUG_MODE" == "true" ]]; then
                                  echo "DEBUG: git stash pop successful after creating branch."
                              fi
-
 
                             read -p "Proceed with commit? (y/N): " commit_confirm
                             if [[ ! $commit_confirm =~ ^[Yy]$ ]]; then
