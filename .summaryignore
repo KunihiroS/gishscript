@@ -1,3 +1,7 @@
+# summ command related files
+.summaryignore
+summary_*.md
+
 # システム共通の除外パターン
 ## バージョン管理システム関連
 ## 意図: リポジトリ管理ファイルの除外
@@ -33,7 +37,7 @@ pnpm-lock.yaml
 # Node.js開発環境
 ## パッケージ管理とビルド関連
 ## 意図: Node.js開発環境特有のファイルを除外
-node_modules/
+node_modules/**        # 修正: '**' を追加
 bower_components/
 coverage/
 .npm/
@@ -43,7 +47,7 @@ coverage/
 # フロントエンド成果物
 ## コンパイル/最小化されたファイル
 ## 意図: ビルド成果物を除外（構造のみ表示）
-dist/**/*
+dist/**                 # 修正: '**' に変更
 *.min.js
 *.min.css
 *.map
@@ -56,7 +60,7 @@ dist/**/*
 **/python3.*/
 **/site-packages/
 **/dist-packages/
-**pycache**/
+**/pycache/**          # 修正: '**/' を追加
 *.py[cod]
 *$py.class
 *.so
@@ -64,7 +68,7 @@ dist/**/*
 
 ## バイナリと設定ファイル
 # すべての実行ファイル（包括的な除外）
-**/bin/*
+bin/
 # 仮想環境設定ファイル
 pyvenv.cfg
 # pip設定ファイル
@@ -94,14 +98,12 @@ wheels/
 
 # パッケージング
 ## パッケージ管理とインストール
-## 意図: パッケージ関連ファイルの除外
 *.egg-info/
 .installed.cfg
 *.egg
 
 # テスト環境
 ## テストカバレッジとレポート
-## 意図: テスト関連ファイルの除外
 .pytest_cache/
 .coverage
 htmlcov/

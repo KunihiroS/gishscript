@@ -2,157 +2,26 @@
 
 ## Directory Structure
 
-- .env (file contents omitted as per ignore directive)
+- .aider.chat.history.md (file contents omitted as per ignore directive)
+- .aider.input.history (file contents omitted as per ignore directive)
+- .aider.tags.cache.v3 (directory inside omitted for simplicity)
 - .git (directory inside omitted for simplicity)
 - .gitignore (file contents omitted as per ignore directive)
-- .summaryignore
+- .summaryignore (file contents omitted as per ignore directive)
 - LICENSE (file contents omitted as per ignore directive)
 - README.md
 - docs
 - docs/Development_loadmap_gish.txt
 - generate_commit_message.py
-- gish.log (file contents omitted as per ignore directive)
 - gish.sh
+- log
 
 ## File Contents
 
-### .summaryignore
-```
-# システム共通の除外パターン
-## バージョン管理システム関連
-## 意図: リポジトリ管理ファイルの除外
-.git/
-.gitignore
-
-## 一時ファイルとシステムファイル
-## 意図: OS生成ファイルとバックアップの除外
-.DS_Store
-Thumbs.db
-*.log
-*.tmp
-*.temp
-*.swp
-*~
-
-## ライセンス関連
-## 意図: 法的文書の除外（構造のみ表示）
-LICENSE
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# 開発環境設定
-## エディタ/IDE設定ファイル
-## 意図: 開発ツール固有の設定を除外
-.idea/
-.vscode/
-*.sublime-*
-.project
-.settings/
-
-# Node.js開発環境
-## パッケージ管理とビルド関連
-## 意図: Node.js開発環境特有のファイルを除外
-node_modules/
-bower_components/
-coverage/
-.npm/
-.env
-.env.*
-
-# フロントエンド成果物
-## コンパイル/最小化されたファイル
-## 意図: ビルド成果物を除外（構造のみ表示）
-dist/**/*
-*.min.js
-*.min.css
-*.map
-*.bundle.js
-*.chunk.js
-*-bundle.js
-
-# Python開発環境
-## 仮想環境と生成ファイル
-**/python3.*/
-**/site-packages/
-**/dist-packages/
-**pycache**/
-*.py[cod]
-*$py.class
-*.so
-.Python
-
-## バイナリと設定ファイル
-# すべての実行ファイル（包括的な除外）
-**/bin/*
-# 仮想環境設定ファイル
-pyvenv.cfg
-# pip設定ファイル
-pip-selfcheck.json
-
-## 環境管理
-.env/
-.venv/
-env/
-venv/
-ENV/
-
-# ビルドシステム
-## ビルドディレクトリとキャッシュ
-## 意図: ビルド成果物とキャッシュの除外
-dist/
-build/
-develop-eggs/
-downloads/
-eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-
-# パッケージング
-## パッケージ管理とインストール
-## 意図: パッケージ関連ファイルの除外
-*.egg-info/
-.installed.cfg
-*.egg
-
-# テスト環境
-## テストカバレッジとレポート
-## 意図: テスト関連ファイルの除外
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# ドキュメント
-## 生成されたドキュメント
-## 意図: 自動生成ドキュメントの除外
-docs/_build/
-site/
-_site/
-
-# データベースとキャッシュ
-## ローカルデータストア
-## 意図: データベースファイルとキャッシュの除外
-*.sqlite
-*.db
-.cache/
-
-# ビルドツール設定
-## Webpack関連
-## 意図: ビルドツール設定と統計の除外
-webpack-stats.json
-stats.json
-```
-
 ### README.md
 ```
-# gishscript
+# Gish - Git Command Helper
 
-Git コマンドヘルパー。
 直感的なコマンドとインタラクティブなプロンプトで、一般的な Git 操作を簡素化し、ワークフローを強化する、強力で使いやすい Bash スクリプトです。
 
 ## バージョン
@@ -161,48 +30,52 @@ Git コマンドヘルパー。
 
 ## 最近のトピック
 
-- Changed as following (not tested yet)
-    gish --p で Pull したあとターゲットのブランチに移動
-    gish --p および gish で existing branch を選んだ際にリストされるブランチの一覧から、現在のブランチを除外
+- `gish --p` で Pull したあとターゲットのブランチに移動
+- `gish --p` および `gish` で existing branch を選んだ際にリストされるブランチの一覧から、現在のブランチを除外
 
-## 機能:
+## 機能
 
-### --s オプションによる Stash 管理:
+### --s オプションによる Stash 管理
 
-- `--s` オプションに続けて stash 名を指定することで、現在の作業ディレクトリとインデックスの状態を stash に保存し、すぐに再適用できます。これにより、stash を頻繁に使用するユーザーのワークフローが簡素化されます。
-- 例: `gish --s my_stash_name` は、現在の状態を `my_stash_name` として保存し、再適用して、更新された stash リストを表示します。stash 名にスペースは使用できません。名前が空の場合、名前は "yyyymmddhhmmss" になります。
+`--s` オプションに続けて stash 名を指定することで、現在の作業ディレクトリとインデックスの状態を stash に保存し、すぐに再適用できます。これにより、stash を頻繁に使用するユーザーのワークフローが簡素化されます。
 
-### --l オプションによる Stash へのロールバック:
+例: `gish --s my_stash_name` は、現在の状態を my_stash_name として保存し、再適用して、更新された stash リストを表示します。stash 名にスペースは使用できません。名前が空の場合、名前は "yyyymmddhhmmss" になります。
 
-- `--l` オプションを使用すると、`stash@{0}` にロールバックし、その stash 以降に行われたすべての変更を破棄できます。これは、以前の状態にすばやく戻す場合に便利です。
-- 例: `gish --l` は、確認を求められた後、作業ディレクトリを `stash@{0}` に戻します。
+### --l オプションによる Stash へのロールバック
 
-### --p オプションによるリモートからの簡単プル:
+`--l` オプションを使用すると、stash@{0} にロールバックし、その stash 以降に行われたすべての変更を破棄できます。これは、以前の状態にすばやく戻す場合に便利です。
 
-- `--p` オプションは、リモートブランチから最新の変更をプルし、ローカルの変更をすべて破棄する簡単な方法を提供します。
-- 例: `gish --p` は、すべてのブランチをフェッチし、1 つを選択できるようにし、ローカルブランチを選択したリモートブランチにリセットします。
+例: `gish --l` は、確認を求められた後、作業ディレクトリを stash@{0} に戻します。
 
-### OpenAI による自動コミットメッセージ生成:
+### --p オプションによるリモートからの簡単プル
 
-- Gish は、OpenAI の API を使用してコミットメッセージを自動的に生成するようになりました。メッセージを生成した後、それが受け入れられるかどうかを確認するプロンプトが表示されます。コミットする前に、必要に応じてメッセージを編集できます。
-- スクリプトには OpenAI API キーが必要で、git diff に基づいて簡潔で関連性の高いコミットメッセージを生成するために使用されます。
+`--p` オプションは、リモートブランチから最新の変更をプルし、ローカルの変更をすべて破棄する簡単な方法を提供します。
 
-### ユーザーフレンドリーなメッセージング:
+例: `gish --p` は、すべてのブランチをフェッチし、1 つを選択できるようにし、ローカルブランチを選択したリモートブランチにリセットします。
 
-- `--s`、`--l`、`--p` オプションを使用する際のメッセージがより明確になりました。スクリプトは、破壊的な操作の可能性のある操作をユーザーにガイドするために、詳細なプロンプトと警告を提供します。
+### OpenAI による自動コミットメッセージ生成
 
-### ヘルプオプション (--help):
+Gish は、OpenAI の API を使用してコミットメッセージを自動的に生成します。メッセージを生成した後、それが受け入れられるかどうかを確認するプロンプトが表示されます。コミットする前に、必要に応じてメッセージを編集できます。
 
-- `--help` オプションは、gish スクリプトの詳細な使用ガイドを表示し、新規ユーザーがスクリプトを効果的に理解して使用できるようにします。
+スクリプトには OpenAI API キーが必要で、git diff に基づいて簡潔で関連性の高いコミットメッセージを生成するために使用されます。
 
-## 改善点:
+### ユーザーフレンドリーなメッセージング
 
-### エラー処理:
+`--s`、`--l`、`--p` オプションを使用する際のメッセージがより明確になりました。スクリプトは、破壊的な操作の可能性のある操作をユーザーにガイドするために、詳細なプロンプトと警告を提供します。
 
-- スクリプト全体でエラー処理が改善されました。無効なオプション、引数の欠落、その他のエラーが発生した場合、有益なエラーメッセージが表示され、予期しないスクリプトの動作を防ぎます。
-- たとえば、stash 名を引用符で囲まない `gish --s mini update` は、エラーを正しくトリガーするようになりました。
+### ヘルプオプション (--help)
 
-### コードの改善:
+`--help` オプションは、gish スクリプトの詳細な使用ガイドを表示し、新規ユーザーがスクリプトを効果的に理解して使用できるようにします。
+
+## 改善点
+
+### エラー処理
+
+スクリプト全体でエラー処理が改善されました。無効なオプション、引数の欠落、その他のエラーが発生した場合、有益なエラーメッセージが表示され、予期しないスクリプトの動作を防ぎます。
+
+たとえば、stash 名を引用符で囲まない `gish --s mini update` は、エラーを正しくトリガーするようになりました。
+
+### コードの改善
 
 - コードの可読性と構造が全体的に改善され、よりスムーズな操作と将来のメンテナンスが容易になりました。
 - マイナーな問題を修正し、より明確にするために出力形式を改善しました。
@@ -220,54 +93,59 @@ Gish は、Git 操作を合理化し、安全に実行するように設計さ�
 - ブランチを選択して切り替え
 - 新しいブランチを作成
 - リモートリポジトリにプッシュ
-- 単一のコマンドで Git stash を保存および適用 (--s オプション)
-- 単一のコマンドで特定の stash にロールバック (--l オプション)
-- ローカルの変更を破棄してリモートから簡単にプル (--p オプション)
-- 使用方法の説明付きのヘルプガイドにアクセス (--help オプション)
+- 単一のコマンドで Git stash を保存および適用 (`--s` オプション)
+- 単一のコマンドで特定の stash にロールバック (`--l` オプション)
+- ローカルの変更を破棄してリモートから簡単にプル (`--p` オプション)
+- 使用方法の説明付きのヘルプガイドにアクセス (`--help` オプション)
 - OpenAI を使用してコミットメッセージを自動的に生成
 
-### 使用方法
+### インストール手順
 
-1.  スクリプトを `gish` として次の場所に保存します: `~/.local/bin/gish` (注: ~ はホームディレクトリを表します)。スクリプトに実行権限を付与します:
+1. スクリプトを `gish` として次の場所に保存します: `~/.local/bin/gish` (注: `~` はホームディレクトリを表します)
+2. スクリプトに実行権限を付与します:
+```bash
+chmod +x ~/.local/bin/gish
+```
 
-    ```bash    chmod +x ~/.local/bin/gish    ```
+3. `.bashrc` または `.zshrc` に次の行を追加します:
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+alias gish='~/.local/bin/gish "$@"'
+```
 
-2.  `.bashrc` または `.zshrc` に次の行を追加します:
+4. シェルを再起動するか、次のコマンドを実行して変更を適用します:
+```bash
+source ~/.bashrc  # または source ~/.zshrc
+```
 
-    ```bash    export PATH="$HOME/.local/bin:$PATH"    alias gish='~/.local/bin/gish "$@"'    ```
-
-3.  シェルを再起動するか、次のコマンドを実行して変更を適用します:
-
-    ```bash    source ~/.bashrc # または source ~/.zshrc    ```
-
-4.  Git リポジトリ内で `gish` コマンドを実行します。
+これで Git リポジトリ内で `gish` コマンドを実行できます。
 
 ### 操作手順
 
-以下は、メイン機能 (オプションなしの gish) の操作手順です。
+以下は、メイン機能（オプションなしの `gish`）の操作手順です：
 
-1.  `gish` コマンドを実行すると、現在のブランチが表示されます。未コミットの変更がある場合は、次のオプションが表示されます:
-    - 変更をコミット
-    - 変更を stash
-    - 未コミットの変更を続行
-    - 操作をキャンセル
+1. `gish` コマンドを実行すると、現在のブランチが表示されます。未コミットの変更がある場合は、次のオプションが表示されます：
+   - 変更をコミット
+   - 変更を stash
+   - 未コミットの変更を続行
+   - 操作をキャンセル
 
-2.  変更がステージングされ、`git status` の結果が表示されます。
+2. 変更がステージングされ、`git status` の結果が表示されます。
 
-3.  コミットするかどうかを選択します:
-    - はいの場合、コミットメッセージが生成され、変更したい場合はコミットメッセージを入力するように求められます。
-    - いいえの場合、操作はキャンセルされます。
+3. コミットするかどうかを選択します：
+   - はいの場合、コミットメッセージが生成され、変更したい場合はコミットメッセージを入力するように求められます。
+   - いいえの場合、操作はキャンセルされます。
 
-4.  ターゲットブランチを選択します:
-    - 現在のブランチ
-    - 既存のブランチ
-    - 新しいブランチ
+4. ターゲットブランチを選択します：
+   - 現在のブランチ
+   - 既存のブランチ
+   - 新しいブランチ
 
-5.  選択に応じて、ブランチが切り替えられるか、作成されます。
+5. 選択に応じて、ブランチが切り替えられるか、作成されます。
 
-6.  最後に、選択したブランチにプッシュするかどうかを尋ねられます。
+6. 最後に、選択したブランチにプッシュするかどうかを尋ねられます。
 
-7.  操作が完了すると、現在のブランチが表示されます。
+操作が完了すると、現在のブランチが表示されます。
 
 ### 注意事項
 
@@ -276,70 +154,78 @@ Gish は、Git 操作を合理化し、安全に実行するように設計さ�
 - プッシュ操作は、ネットワーク接続の状態に依存します。
 - 操作がキャンセルされた場合、ステージングされた変更はリセットされません。
 
-### 環境設定:
+## 環境設定
 
-#### 環境変数:
+### 環境変数
 
-- `.env` ファイルを `generate_commit_message.py` と同じディレクトリに配置します。このファイルには、OpenAI API キーを `OPENAI_API_KEY` として含める必要があります。
-- `.env` ファイルのコンテンツの例:
+`.env` ファイルを `generate_commit_message.py` と同じディレクトリに配置します。このファイルには、OpenAI API キーを `OPENAI_API_KEY` として含める必要があります。
 
-  ```  OPENAI_API_KEY=your_openai_api_key_here  ```
+`.env` ファイルのコンテンツの例:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
 
-#### Python スクリプトのパス:
+### Python スクリプトのパス
 
-- Python スクリプト (`generate_commit_message.py`) が別のディレクトリにある場合は、`gish` スクリプトのパスを更新します:
+Python スクリプト (`generate_commit_message.py`) が別のディレクトリにある場合は、gish スクリプトのパスを更新します:
 
-  ```bash  commit_message=$("$VENV_PYTHON" "$COMMIT_MESSAGE_SCRIPT" 2>&1)  ```
+```bash
+commit_message=$("$VENV_PYTHON" "$COMMIT_MESSAGE_SCRIPT" 2>&1)
+```
 
-- このパスがスクリプトを正しく指していることを確認して、実行エラーを回避してください。
+このパスがスクリプトを正しく指していることを確認して、実行エラーを回避してください。
 
-#### requirements.txt
+### 必要なパッケージ
 
+requirements.txt の内容:
+```
 openai>=1.0.0
 python-dotenv>=0.19.0
-
-#### 仮想環境
-
-- Python スクリプトの実行には、仮想環境を使用します。
-- 仮想環境は、`gish-tools/venv` に作成してください。
-  cd /usr/local/bin/gish-tools
-  python3 -m venv venv
-  source venv/bin/activate
-  pip install -r requirements.txt
-- 新しくBashターミナル作成時にgish-toolsの仮想環境を有効化するには、`.bashrc` または `.zshrc` に以下のコードを追加してください。
 ```
-if [ -d "$HOME/.local/bin/gish-tools/venv" ]; then
-    if [ -z "$VIRTUAL_ENV" ] || [ "$VIRTUAL_ENV" != "$HOME/.local/bin/gish-tools/venv" ]; then
-        source "$HOME/.local/bin/gish-tools/venv/bin/activate"
-        echo "gish-tools venv activated."
-    fi
-fi
+
+### 仮想環境
+
+Python スクリプトの実行には、仮想環境を使用します。以下の手順で設定してください：
+
+1. 仮想環境を作成：
+```bash
+cd ~/.local/bin/gish-tools
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
+
+注: gish スクリプトは内部で `activate_virtual_env()` を呼び出すため、通常の使用時には仮想環境を意識する必要はありません。コマンド実行時にのみ自動的に仮想環境が有効化されます。
 
 ### ファイル構成
+
 ```
-/usr/local/bin/
-├── gish                    # メインのシェルスクリプト
-└── gish-tools/            # gish関連のツール用ディレクトリ
+~/.local/bin/
+└── gish                    # メインのシェルスクリプト
+~/.local/bin/gish-tools/    # gish関連のツール用ディレクトリ
     ├── generate_commit_message.py
     ├── requirements.txt
     ├── .env
     └── venv/              # Python 仮想環境
 ```
 
-### トラブルシューティング
+## トラブルシューティング
 
-- スクリプトを実行できない場合: スクリプトファイルに実行権限があることを確認してください。次のコマンドを実行して権限を付与できます:
+- スクリプトを実行できない場合:
+  スクリプトファイルに実行権限があることを確認してください。
+  ```bash
+  chmod +x ~/.local/bin/gish
+  ```
 
-  ```bash  chmod +x ~/.local/bin/gish  ```
+- ブランチの切り替えに失敗した場合:
+  未コミットの変更がないか確認してください。競合がないことを確認してください。
 
-- ブランチの切り替えに失敗した場合: 未コミットの変更がないか確認してください。競合がないことを確認してください。
-
-- プッシュに失敗した場合: インターネット接続を確認してください。リモートリポジトリへのアクセス権があることを確認してください。
+- プッシュに失敗した場合:
+  インターネット接続を確認してください。リモートリポジトリへのアクセス権があることを確認してください。
 
 ## カスタマイズ
 
-スクリプトを編集することで、次のカスタマイズが可能です:
+スクリプトを編集することで、次のカスタマイズが可能です：
 
 - デフォルトのブランチ名の変更
 - 追加の Git コマンドの実行
@@ -595,7 +481,7 @@ if __name__ == "__main__":
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.3.9"
+    echo "ver: 1.4.0"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -653,7 +539,6 @@ stash_and_apply() {
          echo "DEBUG: Using stash_name: $stash_name"
     fi
 
-
     # ワーキングツリーに変更があるか確認
     if ! git diff-index --quiet HEAD --; then
         if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -663,7 +548,7 @@ stash_and_apply() {
         echo "No local changes to save"
         exit 0  # スクリプトを終了する
     fi
-    
+
     if ! git stash save "$stash_name" ; then
        echo "Error: Failed to save the stash. Stash name: $stash_name" >&2
         if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -673,10 +558,9 @@ stash_and_apply() {
         exit 1
     fi
     if [[ "$DEBUG_MODE" == "true" ]]; then
-      echo "DEBUG: stash save successful.  Stash name: $stash_name"
+      echo "DEBUG: stash save successful. Stash name: $stash_name"
       git stash list
     fi
-
 
     if ! git stash apply "stash@{0}"; then
         echo "Error: Failed to apply the stash." >&2
@@ -742,7 +626,7 @@ easy_pull() {
     if [[ "$DEBUG_MODE" == "true" ]]; then
        echo "DEBUG: easy_pull function started"
     fi
-    read -p "Easy pull from remote repo anyway? *CAUTION: All rollback to remote repo condition, your modify will be deleted. [y/N] " confirm
+    read -p "Easy pull from remote repo anyway? *CAUTION: All local changes will be discarded and you will be synced with the remote branch. [y/N] " confirm
     if [[ $confirm =~ ^[Yy]$ ]]; then
         # Get current branch
         current_branch=$(git rev-parse --abbrev-ref HEAD)
@@ -784,7 +668,6 @@ easy_pull() {
            echo "DEBUG: Remote branches loaded: ${remote_branches[@]}"
          fi
 
-
         # Display branch selection
         echo "Current branch: $current_branch (excluded from list)"
         select branch in "${remote_branches[@]}"; do
@@ -801,16 +684,40 @@ easy_pull() {
                     echo "DEBUG: selected branch: $branch"
                  fi
 
-                read -p "Final confirmation - This will delete all local changes and switch to branch '$branch'. Continue? [y/N] " final_confirm
+                read -p "Final confirmation - This will DISCARD ALL LOCAL CHANGES and switch to branch '$branch'. Continue? [y/N] " final_confirm
                 if [[ $final_confirm =~ ^[Yy]$ ]]; then
                      if [[ "$DEBUG_MODE" == "true" ]]; then
                       echo "DEBUG: User confirmed to proceed with pull to branch: $branch."
                     fi
+                    echo "Discarding local changes..."
+                    if ! git reset --hard HEAD; then
+                        echo "Error: Failed to discard local changes." >&2
+                        if [[ "$DEBUG_MODE" == "true" ]]; then
+                            echo "DEBUG: Failed to discard local changes."
+                        fi
+                        exit 1
+                    fi
+                    if [[ "$DEBUG_MODE" == "true" ]]; then
+                        echo "DEBUG: Successfully discarded local changes."
+                    fi
+
                     echo "Switching to remote branch '$branch'..."
 
-                    # まずチェックアウトを試みる
-                    if ! git checkout "$branch" 2>/dev/null; then
-                        # ローカルブランチが存在しない場合は新規作成
+                    # ローカルブランチの存在を確認
+                    if git rev-parse --verify "$branch" >/dev/null 2>&1; then
+                        # すでにローカルブランチがあるので checkout
+                        if ! git checkout "$branch"; then
+                            echo "Error: Failed to checkout local branch '$branch'" >&2
+                            if [[ "$DEBUG_MODE" == "true" ]]; then
+                                echo "DEBUG: Failed to checkout local branch '$branch'."
+                            fi
+                            exit 1
+                        fi
+                        if [[ "$DEBUG_MODE" == "true" ]]; then
+                            echo "DEBUG: Successfully checked out existing local branch '$branch'."
+                        fi
+                    else
+                        # ローカルブランチがなければ新規作成
                         if ! git checkout -b "$branch" --track "origin/$branch"; then
                             echo "Error: Failed to create branch '$branch'" >&2
                             if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -819,13 +726,9 @@ easy_pull() {
                             exit 1
                         fi
                         if [[ "$DEBUG_MODE" == "true" ]]; then
-                            echo "DEBUG: created branch '$branch'."
+                            echo "DEBUG: Created new branch '$branch' from remote."
                          fi
                     fi
-                   if [[ "$DEBUG_MODE" == "true" ]]; then
-                       echo "DEBUG: git checkout successful. branch: $branch"
-                   fi
-
 
                     # 確実にリモートの状態にリセット
                     if ! git reset --hard "origin/$branch"; then
@@ -937,9 +840,10 @@ generate_smart_commit_message() {
     fi
 }
 
-
 # arg check
 DEBUG_MODE="false"
+ACTION="" # 実行するアクションを格納する変数
+stash_name="" # stash名を格納する変数を追加
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -948,18 +852,19 @@ while [ "$#" -gt 0 ]; do
         exit 0
         ;;
     --s)
+        ACTION="stash_and_apply"
         shift
-        stash_name="$1"
-        if [[ -z "$stash_name" ]]; then
-            echo "Error: Stash name is required after --s option." >&2
-            exit 1
+        if [ -n "$1" ] && [[ "$1" != -* ]]; then # 次の引数が存在し、オプションでない場合
+            stash_name="$1"
+            shift
         fi
-        shift
         ;;
     --l)
+        ACTION="apply_stash_rollback"
         shift
         ;;
     --p)
+        ACTION="easy_pull"
         shift
         ;;
     --debug)
@@ -976,7 +881,6 @@ done
 # Activate virtual environment
 activate_virtual_env
 
-
 #DEBUG_MODE="true"  # デバッグモードを有効にするには、この行のコメントアウトを解除してください。
 if [[ "$DEBUG_MODE" == "true" ]]; then
   echo "DEBUG MODE ENABLED. Detailed logging enabled."
@@ -985,24 +889,23 @@ if [[ "$DEBUG_MODE" == "true" ]]; then
   set -x # コマンド実行をトレース
 fi
 
-case "$1" in
-    --s)
-        stash_and_apply "$stash_name"  # Pass it to the function
+case "$ACTION" in
+    "stash_and_apply")
+        stash_and_apply "$stash_name"
         ;;
-    --l)
+    "apply_stash_rollback")
         apply_stash_rollback
         ;;
-    --p)
+    "easy_pull")
         easy_pull
         ;;
     "")
-        # Suppress "command not found" error while maintaining functionality
-        # This is a workaround for the function definition order issue
-        (gish) 2>/dev/null
+        # 引数なしの場合のみ gish 関数を実行
+        gish
         ;;
     *)
         if [[ "$DEBUG_MODE" == "true" ]]; then
-           echo "DEBUG: No action matched: $1"
+           echo "DEBUG: No action matched: $ACTION"
         fi
        exit 1
         ;;
@@ -1193,7 +1096,6 @@ gish() {
                                  echo "DEBUG: git checkout -b $new_branch successful."
                             fi
 
-
                             # 変更を復元
                             if ! git stash pop; then
                                 echo "Failed to restore changes." >&2
@@ -1209,7 +1111,6 @@ gish() {
                             if [[ "$DEBUG_MODE" == "true" ]]; then
                                  echo "DEBUG: git stash pop successful after creating branch."
                              fi
-
 
                             read -p "Proceed with commit? (y/N): " commit_confirm
                             if [[ ! $commit_confirm =~ ^[Yy]$ ]]; then
@@ -1364,3 +1265,90 @@ if [[ "$DEBUG_MODE" == "true" ]]; then
   exec 3>&- 4>&-
 fi
 ```
+
+
+## Log of commit message
+
+### .gitignore
+
+- f6d1272 - Your Name, Fri Nov 8 14:16:37 2024 +0900 : aider added in gitignore
+- f172f14 - KunihiroS, Thu Aug 29 19:41:52 2024 +0900 : initial release
+- 8dff496 - KunihiroS, Thu Aug 29 19:20:21 2024 +0900 : Initial commit
+
+### .summaryignore
+
+- 234c03a - KunihiroS, Sun Dec 29 23:15:50 2024 +0900 : Refine .summaryignore and gishscript_project_summary to improve ignored file patterns and update documentation
+- 5cfc78e - KunihiroS, Fri Dec 27 17:14:00 2024 +0900 : update to add debug code.
+
+### LICENSE
+
+- 8dff496 - KunihiroS, Thu Aug 29 19:20:21 2024 +0900 : Initial commit
+
+### README.md
+
+- d4dd40f - Your Name, Tue Jan 7 17:04:55 2025 +0900 : Update README and gish script for version 1.4.0, enhancing user messaging and refining command options.
+- df57dc9 - KunihiroS, Mon Jan 6 15:21:16 2025 +0900 : 更新されたREADME.mdにフォーマットの改善を行い、不要なファイルを削除してファイル構成を整理しました。
+- 69186b5 - KunihiroS, Sat Dec 21 17:05:41 2024 +0900 : Refactor branch update commands and improve branch selection process
+- dfafdb7 - KunihiroS, Thu Dec 19 00:04:12 2024 +0900 : Refactor README.md to improve the virtual environment setup and requirements handling with clear instructions.
+- 2d3e60a - KunihiroS, Mon Dec 16 02:07:18 2024 +0900 : **Commit message:**
+- 4b335a9 - KunihiroS, Sun Dec 15 22:19:58 2024 +0900 : modify the process order.
+- 450ff55 - KunihiroS, Tue Sep 3 13:06:28 2024 +0900 : ℹ️ Update version to 1.2.8 in README.md and gish.sh, add recent topic section in README.md, optimize stash_and_apply check for local changes.
+- 5d5b35b - KunihiroS, Tue Sep 3 10:54:36 2024 +0900 : ℹ️ Update version to 1.2.7 and allow --s option with an empty name to be "yyyymmddhhmmss"
+- 5eee022 - KunihiroS, Tue Sep 3 01:31:27 2024 +0900 : Refactored Gishscript to version 1.2.6, integrating OpenAI for automatic commit message generation and addressing unexpected error during executions.
+- 6e933f2 - KunihiroS, Tue Sep 3 01:01:10 2024 +0900 : Refactor README.md to address incomplete detailed info and unexpected error issue.
+- 36e36c5 - KunihiroS, Tue Sep 3 00:39:14 2024 +0900 : Increment version to 1.2.5 and add auto-generated commit message by OpenAI.
+- a66f99b - KunihiroS, Mon Sep 2 15:27:59 2024 +0900 : 1.2.4
+- 6454be1 - KunihiroS, Mon Sep 2 15:08:08 2024 +0900 : minor
+- 384d8a1 - KunihiroS, Mon Sep 2 14:49:43 2024 +0900 : 1.2.2
+- d796bb0 - KunihiroS, Mon Sep 2 14:27:34 2024 +0900 : 1.2.1
+- c09a774 - KunihiroS, Mon Sep 2 13:44:19 2024 +0900 : 1.2.0 release
+- 87016a4 - KunihiroS, Sun Sep 1 15:33:06 2024 +0900 : 1.1.0 release
+- 878120f - KunihiroS, Thu Aug 29 19:43:44 2024 +0900 : Readme updated
+- 8dff496 - KunihiroS, Thu Aug 29 19:20:21 2024 +0900 : Initial commit
+
+### docs/Development_loadmap_gish.txt
+
+- 7b3efda - KunihiroS, Tue Sep 3 00:35:07 2024 +0900 : Commit: Add automatic generation of Git commit messages using OpenAI
+- 522b0d0 - KunihiroS, Mon Sep 2 16:20:48 2024 +0900 : docs added
+
+### generate_commit_message.py
+
+- b641789 - KunihiroS, Sun Dec 29 16:30:27 2024 +0900 : Add filtering logic for Git diff to exclude unnecessary changes and improve error message formatting in `generate_commit_message.py`.
+- 5cfc78e - KunihiroS, Fri Dec 27 17:14:00 2024 +0900 : update to add debug code.
+- 2d3e60a - KunihiroS, Mon Dec 16 02:07:18 2024 +0900 : **Commit message:**
+- 5d5b35b - KunihiroS, Tue Sep 3 10:54:36 2024 +0900 : ℹ️ Update version to 1.2.7 and allow --s option with an empty name to be "yyyymmddhhmmss"
+- e6a49ef - KunihiroS, Tue Sep 3 01:00:25 2024 +0900 : Refactor commit message handling in generate_commit_message.py
+- 7b3efda - KunihiroS, Tue Sep 3 00:35:07 2024 +0900 : Commit: Add automatic generation of Git commit messages using OpenAI
+
+### gish.sh
+
+- d4dd40f - Your Name, Tue Jan 7 17:04:55 2025 +0900 : Update README and gish script for version 1.4.0, enhancing user messaging and refining command options.
+- 5cfc78e - KunihiroS, Fri Dec 27 17:14:00 2024 +0900 : update to add debug code.
+- aa899b8 - KunihiroS, Sun Dec 22 20:20:09 2024 +0900 : Refactor gish.sh: Update version to 1.3.8, improve branch handling logic, and enhance push confirmation process
+- c19e166 - KunihiroS, Sun Dec 22 19:36:24 2024 +0900 : Refactor: Improve `easy_pull` function for easier remote branch selection and safer branch switching
+- 31b8ceb - KunihiroS, Sat Dec 21 17:02:58 2024 +0900 : Refactor script to exclude current branch from branch list
+- d344114 - KunihiroS, Sat Dec 21 16:48:52 2024 +0900 : Update version to 1.3.5, enhance --p option to pull from remote, discard local changes, and move to targeted branch. Fix rollback functionality in easy_pull function.
+- e3d07dd - KunihiroS, Fri Dec 20 01:21:37 2024 +0900 : Refactor: Update version to 1.3.4 and activate virtual environment if available.
+- b95ffd9 - KunihiroS, Mon Dec 16 00:56:24 2024 +0900 : fixing smart commit message function.
+- 4b335a9 - KunihiroS, Sun Dec 15 22:19:58 2024 +0900 : modify the process order.
+- aef29bb - Your Name (aider), Tue Nov 5 17:28:00 2024 +0900 : fix: Ensure valid branch selection with feedback in gish command
+- 22e48c3 - Your Name (aider), Tue Nov 5 17:22:30 2024 +0900 : fix: Resolve branch selection issue in gish command by using git branch --list
+- 450ff55 - KunihiroS, Tue Sep 3 13:06:28 2024 +0900 : ℹ️ Update version to 1.2.8 in README.md and gish.sh, add recent topic section in README.md, optimize stash_and_apply check for local changes.
+- 743d43b - KunihiroS, Tue Sep 3 12:37:08 2024 +0900 : Refactor branch selection logic in easy_pull() function
+- 93dd817 - KunihiroS, Tue Sep 3 12:22:52 2024 +0900 : arg checker update
+- 5467125 - KunihiroS, Tue Sep 3 11:13:22 2024 +0900 : Refactor error check in gish.sh
+- 5d5b35b - KunihiroS, Tue Sep 3 10:54:36 2024 +0900 : ℹ️ Update version to 1.2.7 and allow --s option with an empty name to be "yyyymmddhhmmss"
+- e6a49ef - KunihiroS, Tue Sep 3 01:00:25 2024 +0900 : Refactor commit message handling in generate_commit_message.py
+- 7b3efda - KunihiroS, Tue Sep 3 00:35:07 2024 +0900 : Commit: Add automatic generation of Git commit messages using OpenAI
+- a66f99b - KunihiroS, Mon Sep 2 15:27:59 2024 +0900 : 1.2.4
+- 1ed6537 - KunihiroS, Mon Sep 2 15:14:47 2024 +0900 : 1.2.3
+- 6454be1 - KunihiroS, Mon Sep 2 15:08:08 2024 +0900 : minor
+- 384d8a1 - KunihiroS, Mon Sep 2 14:49:43 2024 +0900 : 1.2.2
+- f1cc0a3 - KunihiroS, Mon Sep 2 14:31:20 2024 +0900 : small update
+- d796bb0 - KunihiroS, Mon Sep 2 14:27:34 2024 +0900 : 1.2.1
+- cd21b51 - KunihiroS, Mon Sep 2 13:51:51 2024 +0900 : mini modify
+- 159af2f - KunihiroS, Mon Sep 2 13:49:44 2024 +0900 : test
+- c09a774 - KunihiroS, Mon Sep 2 13:44:19 2024 +0900 : 1.2.0 release
+- 87016a4 - KunihiroS, Sun Sep 1 15:33:06 2024 +0900 : 1.1.0 release
+- a7a2074 - KunihiroS, Thu Aug 29 19:50:58 2024 +0900 : minor change
+- f172f14 - KunihiroS, Thu Aug 29 19:41:52 2024 +0900 : initial release
