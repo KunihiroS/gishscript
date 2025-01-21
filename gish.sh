@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.0"
+    echo "ver: 1.4.1"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -168,14 +168,13 @@ easy_pull() {
            echo "DEBUG: git fetch --all --prune successful"
          fi
 
-        # Get list of remote branches (excluding current branch)
+       # Get list of remote branches (including current branch)
         echo "Loading remote branches..."
         PS3="Select branch to pull: "
         mapfile -t remote_branches < <(git branch -r | \
             grep '^  origin/' | \
             grep -v '/HEAD' | \
             sed 's#  origin/##' | \
-            grep -v "^${current_branch}\$" | \
             sort -u)
 
         if [ ${#remote_branches[@]} -eq 0 ]; then
@@ -190,7 +189,7 @@ easy_pull() {
          fi
 
         # Display branch selection
-        echo "Current branch: $current_branch (excluded from list)"
+        echo "Current branch: $current_branch (included from list)"
         select branch in "${remote_branches[@]}"; do
             if [ -n "$branch" ]; then
                 # Validate branch name
