@@ -14,6 +14,7 @@ show_help() {
     echo "  --s <name>    Save and apply a stash with the specified name. no space acceptable"
     echo "  --l           Save and rollback to stash@{0}, deleting all changes after it."
     echo "  --p           Easy pull from a remote repository, discarding all local changes and then move to targeted branch."
+    echo "  --d           Show diff between local working directory and remote repository."
     echo "  --debug       Enable debug mode, outputs detailed logs."
     echo "  --help        Display this help and exit."
     echo
@@ -28,10 +29,13 @@ show_help() {
     echo "  gish --p"
     echo "      This will discard all local changes and pull the latest changes from the selected remote branch."
     echo
+    echo "  gish --d"
+    echo "      This will show the diff between your local working directory and the remote repository."
+    echo
     exit 0
 }
 
-# 仮想環境を有効化
+# Activate virtual environment
 activate_virtual_env() {
     if [ -d "$HOME/.local/bin/gish-tools/venv" ]; then
         source "$HOME/.local/bin/gish-tools/venv/bin/activate"
@@ -60,14 +64,14 @@ stash_and_apply() {
          echo "DEBUG: Using stash_name: $stash_name"
     fi
 
-    # ワーキングツリーに変更があるか確認
+    # Check if there are changes in the working tree
     if ! git diff-index --quiet HEAD --; then
         if [[ "$DEBUG_MODE" == "true" ]]; then
             echo "DEBUG: Local changes detected. proceeding to stash"
         fi
     else
         echo "No local changes to save"
-        exit 0  # スクリプトを終了する
+        exit 0  # Exit script
     fi
 
     if ! git stash save "$stash_name" ; then
@@ -101,7 +105,7 @@ stash_and_apply() {
     if [[ "$DEBUG_MODE" == "true" ]]; then
           echo "DEBUG: stash_and_apply function finished successfully."
     fi
-    exit 0  # スクリプトを終了する
+    exit 0  # Exit script
 }
 
 # reset --hard -> stash apply stash@{0}
@@ -139,7 +143,7 @@ apply_stash_rollback() {
      if [[ "$DEBUG_MODE" == "true" ]]; then
           echo "DEBUG: apply_stash_rollback function finished successfully."
     fi
-    exit 0  # スクリプトを終了する
+    exit 0  # Exit script
 }
 
 # reset --hard -> pull origin {branch}
@@ -223,9 +227,9 @@ easy_pull() {
 
                     echo "Switching to remote branch '$branch'..."
 
-                    # ローカルブランチの存在を確認
+                    # Check if local branch exists
                     if git rev-parse --verify "$branch" >/dev/null 2>&1; then
-                        # すでにローカルブランチがあるので checkout
+                        # Checkout if local branch already exists
                         if ! git checkout "$branch"; then
                             echo "Error: Failed to checkout local branch '$branch'" >&2
                             if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -237,7 +241,7 @@ easy_pull() {
                             echo "DEBUG: Successfully checked out existing local branch '$branch'."
                         fi
                     else
-                        # ローカルブランチがなければ新規作成
+                        # Create new local branch if it doesn't exist
                         if ! git checkout -b "$branch" --track "origin/$branch"; then
                             echo "Error: Failed to create branch '$branch'" >&2
                             if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -250,7 +254,7 @@ easy_pull() {
                          fi
                     fi
 
-                    # 確実にリモートの状態にリセット
+                    # Reset to remote state for sure
                     if ! git reset --hard "origin/$branch"; then
                         echo "Error: Failed to reset to origin/$branch" >&2
                          if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -265,7 +269,7 @@ easy_pull() {
                     echo "Current branch is now: $(git rev-parse --abbrev-ref HEAD)"
                     echo "Branch is exactly at remote state"
 
-                    # 確認のため状態を表示
+                    # Show status for confirmation
                     git status
                      if [[ "$DEBUG_MODE" == "true" ]]; then
                         echo "DEBUG: Successfully switched to remote branch '$branch'"
@@ -291,7 +295,125 @@ easy_pull() {
     exit 0
 }
 
-# スクリプトの場所を取得
+# Function to display diff with remote repository
+easy_diff() {
+    # Color code definition (considering portability)
+    local COLOR_RESET='\033[0m'
+    local COLOR_FILE='\033[36m'
+    local COLOR_HUNK='\033[1;35m'
+    local COLOR_ADD='\033[32m'
+    local COLOR_DEL='\033[31m'
+
+    # Check ANSI color support (valid only if standard output is terminal)
+    if [[ -t 1 ]]; then
+        use_color=true
+    else
+        use_color=false
+        COLOR_RESET=""
+        COLOR_FILE=""
+        COLOR_HUNK=""
+        COLOR_ADD=""
+        COLOR_DEL=""
+    fi
+
+    # Check remote branch existence
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    if ! git ls-remote --exit-code origin "$current_branch" >/dev/null 2>&1; then
+        echo "Error: remote branch 'origin/$current_branch' does not exist" >&2
+        return 1
+    fi
+
+    # Output diff statistics first
+    echo "Change statistics:"
+    show_diff_stats
+    echo ""
+
+    read -p "Display full diff? (y/N): " full_diff_choice
+    if [[ $full_diff_choice =~ ^[Yy]$ ]]; then
+        echo "Difference between remote branch 'origin/$current_branch' and local working directory:"
+        echo ""
+
+        PS3="Select diff display mode: "
+        select display_mode in "Display first N lines" "Display full diff (with pager)" "Cancel"; do
+            case "$display_mode" in
+                "Display first N lines")
+                    read -p "Enter number of lines to display: " num_lines
+                    if [[ "$num_lines" =~ ^[0-9]+$ ]]; then
+                        diff_output=$(git diff "origin/$current_branch" --)
+                        diff_output=$(echo "$diff_output" | head -n "$num_lines") # head コマンドで行数制限
+                        if [ -n "$diff_output" ]; then
+                            echo "$diff_output" | while IFS= read -r line; do
+                                case "$line" in
+                                    "--- a/"*)
+                                        printf "${COLOR_FILE}%s${COLOR_RESET}\n" "$line" # File header (--- a/) cyan color
+                                        ;;
+                                    "+++ b/"*)
+                                        printf "${COLOR_FILE}%s${COLOR_RESET}\n" "$line" # File header (+++ b/) cyan color
+                                        ;;
+                                    "@@"*)
+                                        printf "${COLOR_HUNK}%s${COLOR_RESET}\n" "$line" # Hunk header magenta + bold
+                                        ;;
+                                    "+"*)
+                                        printf "${COLOR_ADD}%s${COLOR_RESET}\n" "$line" # Added line green color
+                                        ;;
+                                    "-"*)
+                                        printf "${COLOR_DEL}%s${COLOR_RESET}\n" "$line" # Deleted line red color
+                                        ;;
+                                    *)
+                                        echo "$line"                 # Context line (no color)
+                                        ;;
+                                esac
+                            done
+                        else
+                            echo "No diff to display."
+                        fi
+                        break # select ループを抜ける
+                    else
+                        echo "Invalid input. Please enter a number." >&2
+                    fi
+                    ;;
+                "Display full diff (with pager)")
+                    git diff --color=always "origin/$current_branch" -- | less -R # Modified line: Added color to pager output
+                    break # select loop
+                    ;;
+                "Cancel")
+                    echo "Operation cancelled."
+                    break # select loop
+                    ;;
+                *)
+                    echo "Invalid choice." >&2
+                    ;;
+            esac
+        done
+    else
+        echo "Diff display cancelled. Showing only statistics."
+    fi
+}
+
+# Function to display diff statistics (no change)
+show_diff_stats() {
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    local awk_script='
+BEGIN {
+    printf "Change Statistics:\n" # Changed to English
+    printf "----------------------------------------\n"
+    printf "%-40s %-20s\n", "File Name", "Changes" # Changed to English
+    printf "----------------------------------------\n"
+}
+{
+    add+=$1; del+=$2
+    changes_desc = sprintf("+%s additions, -%s deletions", $1, $2) # Changed to English
+    printf "%-40s %-20s\n", $3, changes_desc # File Name and Changes
+}
+END {
+    printf "----------------------------------------\n"
+    printf "Total Changes: %d additions, %d deletions\n", add, del # Changed to English
+}'
+    git diff --numstat "origin/$current_branch" -- | awk "$awk_script"
+}
+
+
+# Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 TOOLS_DIR="${SCRIPT_DIR}/gish-tools"
 VENV_PYTHON="${TOOLS_DIR}/venv/bin/python3"
@@ -302,7 +424,7 @@ generate_smart_commit_message() {
     if [[ "$DEBUG_MODE" == "true" ]]; then
       echo "DEBUG: generate_smart_commit_message function started."
     fi
-    # Python仮想環境とスクリプトの存在確認
+    # Check for Python virtual environment and script existence
     if [ ! -f "$VENV_PYTHON" ] || [ ! -f "$COMMIT_MESSAGE_SCRIPT" ]; then
         echo "AI commit message generation not available. Using manual input." >&2
         if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -362,8 +484,8 @@ generate_smart_commit_message() {
 
 # arg check
 DEBUG_MODE="false"
-ACTION="" # 実行するアクションを格納する変数
-stash_name="" # stash名を格納する変数を追加
+ACTION="" # Variable to store action to execute
+stash_name="" # Variable to store stash name
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -374,7 +496,7 @@ while [ "$#" -gt 0 ]; do
     --s)
         ACTION="stash_and_apply"
         shift
-        if [ -n "$1" ] && [[ "$1" != -* ]]; then # 次の引数が存在し、オプションでない場合
+        if [ -n "$1" ] && [[ "$1" != -* ]]; then # If next argument exists and is not an option
             stash_name="$1"
             shift
         fi
@@ -385,6 +507,10 @@ while [ "$#" -gt 0 ]; do
         ;;
     --p)
         ACTION="easy_pull"
+        shift
+        ;;
+    --d)
+        ACTION="easy_diff"
         shift
         ;;
     --debug)
@@ -401,12 +527,12 @@ done
 # Activate virtual environment
 activate_virtual_env
 
-#DEBUG_MODE="true"  # デバッグモードを有効にするには、この行のコメントアウトを解除してください。
+#DEBUG_MODE="true"  # Uncomment this line to enable debug mode
 if [[ "$DEBUG_MODE" == "true" ]]; then
   echo "DEBUG MODE ENABLED. Detailed logging enabled."
   exec 3>&1 4>&2 >"$DEBUG_FILE" 2>&4
   echo "--- Start of gish debug log ---"
-  set -x # コマンド実行をトレース
+  set -x # Trace command execution
 fi
 
 case "$ACTION" in
@@ -419,8 +545,12 @@ case "$ACTION" in
     "easy_pull")
         easy_pull
         ;;
+    "easy_diff")
+        easy_diff
+        exit 0 # easy_diff 実行後にスクリプトを終了
+        ;;
     "")
-        # 引数なしの場合のみ gish 関数を実行
+        # Execute gish function only when no arguments are provided
         gish
         ;;
     *)
@@ -431,7 +561,7 @@ case "$ACTION" in
         ;;
 esac
 
-# gish main
+# gish main function
 gish() {
     if [[ "$DEBUG_MODE" == "true" ]]; then
         echo "DEBUG: gish function started"
@@ -458,7 +588,7 @@ gish() {
 
             case "$branch_choice" in
                 1|2|3)
-                    # タイムスタンプベースの自動stash
+                    # Timestamp-based auto stash
                     stash_name="gish_auto_$(date +%Y%m%d_%H%M%S)"
                      if [[ "$DEBUG_MODE" == "true" ]]; then
                        echo "DEBUG: Temporary stash name: $stash_name"
@@ -475,7 +605,7 @@ gish() {
                         echo "DEBUG: Temporary stash saved."
                      fi
 
-                    # 選択に応じたブランチ処理
+                    # Branch processing based on selection
                     case "$branch_choice" in
                         1)
                              if [[ "$DEBUG_MODE" == "true" ]]; then
@@ -487,7 +617,7 @@ gish() {
                              if [[ "$DEBUG_MODE" == "true" ]]; then
                                echo "DEBUG: User selected commit to existing branch"
                              fi
-                            # 既存のブランチ一覧を取得して表示（現在のブランチを除外）
+                            # Get and display list of existing branches (excluding current branch)
                             mapfile -t branches < <(git branch -r | \
                                 grep '^  origin/' | \
                                 grep -v '/HEAD' | \

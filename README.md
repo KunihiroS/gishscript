@@ -1,171 +1,217 @@
 # Gish - Git Command Helper
 
-直感的なコマンドとインタラクティブなプロンプトで、一般的な Git 操作を簡素化し、ワークフローを強化する、強力で使いやすい Bash スクリプトです。
+**Gish** is a powerful and user-friendly Bash script designed to simplify common Git operations and streamline workflows through intuitive commands and interactive prompts.
 
-## バージョン
+**Design Philosophy:**
 
-ソースコードを参照してください。
+Gish is primarily aimed at **individual developers** to efficiently synchronize their local workspace with remote repositories. By replacing complex Git commands with simpler, more intuitive operations, developers can focus more on coding.
 
-## 最近のトピック
+## Version
 
-- `gish --p` で Pull したあとターゲットのブランチに移動
-- `gish --p` および `gish` で existing branch を選んだ際にリストされるブランチの一覧から、現在のブランチを除外
+Please refer to the source code (the `ver: n.n.n` line at the top of the script).
 
-## 機能
+## Recent Topics
 
-### --s オプションによる Stash 管理
+*   Automatically move to the target branch after pulling with `gish --p`
+*   Exclude the current branch from the branch selection list in `gish --p` and `gish`
+*   Improved output for `gish --d` (statistics information and detailed diff selection, pager support, color display)
+*   Changed the output format of `Change statistics` to user-friendly English
 
-`--s` オプションに続けて stash 名を指定することで、現在の作業ディレクトリとインデックスの状態を stash に保存し、すぐに再適用できます。これにより、stash を頻繁に使用するユーザーのワークフローが簡素化されます。
+## Features
 
-例: `gish --s my_stash_name` は、現在の状態を my_stash_name として保存し、再適用して、更新された stash リストを表示します。stash 名にスペースは使用できません。名前が空の場合、名前は "yyyymmddhhmmss" になります。
+### `--s <stash_name>`: Save and Apply Named Stash
 
-### --l オプションによる Stash へのロールバック
+By specifying a stash name after the `--s` option, you can save the current state of the working directory and index as a named stash and apply it immediately. This allows for smooth saving and restoring of temporary changes, enhancing workflow efficiency.
 
-`--l` オプションを使用すると、stash@{0} にロールバックし、その stash 以降に行われたすべての変更を破棄できます。これは、以前の状態にすばやく戻す場合に便利です。
+**Example:** `gish --s my_stash_name` saves the current state as "my_stash_name" and applies it immediately, displaying the latest stash list.
 
-例: `gish --l` は、確認を求められた後、作業ディレクトリを stash@{0} に戻します。
+*   Spaces cannot be used in the stash name.
+*   If the stash name is omitted, it will automatically be named "yyyymmddhhmmss" (date and time).
 
-### --p オプションによるリモートからの簡単プル
+### `--l`: Rollback to Stash@{0}
 
-`--p` オプションは、リモートブランチから最新の変更をプルし、ローカルの変更をすべて破棄する簡単な方法を提供します。
+Using the `--l` option rolls back to the state of the most recent stash, `stash@{0}`, discarding all subsequent changes. This is useful when you want to quickly revert to the previous state.
 
-例: `gish --p` は、すべてのブランチをフェッチし、1 つを選択できるようにし、ローカルブランチを選択したリモートブランチにリセットします。
+**Example:** Executing `gish --l` displays a confirmation prompt and then rolls back the working directory state to `stash@{0}`. **Note:** All changes made after the rollback will be completely deleted.
 
-### OpenAI による自動コミットメッセージ生成
+### `--p`: Easy Pull from Remote
 
-Gish は、OpenAI の API を使用してコミットメッセージを自動的に生成します。メッセージを生成した後、それが受け入れられるかどうかを確認するプロンプトが表示されます。コミットする前に、必要に応じてメッセージを編集できます。
+The `--p` option provides a simple way to pull the latest changes from the remote repository and discard all local changes. This is useful when you want to always synchronize with the remote repository without worrying about local changes.
 
-スクリプトには OpenAI API キーが必要で、git diff に基づいて簡潔で関連性の高いコミットメッセージを生成するために使用されます。
+**Example:** Executing `gish --p` performs the following steps:
 
-### ユーザーフレンドリーなメッセージング
+1.  Fetch remote repository information (fetch --all --prune)
+2.  Select the branch to pull from the list of remote branches (interactive selection menu)
+3.  Discard local changes (reset --hard HEAD)
+4.  Move to the selected remote branch (checkout -b or checkout)
+5.  Reset the local branch to the state of the remote branch (reset --hard origin/branch_name)
 
-`--s`、`--l`、`--p` オプションを使用する際のメッセージがより明確になりました。スクリプトは、破壊的な操作の可能性のある操作をユーザーにガイドするために、詳細なプロンプトと警告を提供します。
+### `--d`: Display Differences with Remote Repository (Diff)
 
-### ヘルプオプション (--help)
+The `--d` option displays detailed differences between the local working directory and the remote repository. This is useful for reviewing changes.
 
-`--help` オプションは、gish スクリプトの詳細な使用ガイドを表示し、新規ユーザーがスクリプトを効果的に理解して使用できるようにします。
+**Features:**
 
-## 改善点
+*   **Statistics Information:** Initially displays change statistics (added lines, deleted lines, changed files)
+*   **Detailed Diff Display:**
+    *   **Selective Display:**
+        *   Choose to display the entire diff or only the statistics information
+        *   If the entire diff is chosen, select from the following display modes:
+            *   Display only the first N lines (specify the number of lines)
+            *   Display the entire text with a pager (`less`) with color support
+            *   Cancel
+    *   **Color Display:** Color-coded display of file names, hunk headers, added lines, and deleted lines (improved readability)
 
-### エラー処理
+### Automatic Commit Message Generation with OpenAI
 
-スクリプト全体でエラー処理が改善されました。無効なオプション、引数の欠落、その他のエラーが発生した場合、有益なエラーメッセージが表示され、予期しないスクリプトの動作を防ぎます。
+Gish includes a feature that **automatically generates commit messages using the OpenAI API**. This reduces the time spent on creating commit messages and supports more efficient committing.
 
-たとえば、stash 名を引用符で囲まない `gish --s mini update` は、エラーを正しくトリガーするようになりました。
+**Features:**
 
-### コードの改善
+*   **AI Automatic Generation:** Analyzes the content of `git diff` and automatically generates an appropriate commit message
+*   **Message Confirmation:** Allows review and editing of the generated message
+*   **Manual Input Fallback:** Allows manual input of commit messages even if the OpenAI API is unavailable
 
-- コードの可読性と構造が全体的に改善され、よりスムーズな操作と将来のメンテナンスが容易になりました。
-- マイナーな問題を修正し、より明確にするために出力形式を改善しました。
+**Note:**
 
-## 使用方法
+*   An API key (`OPENAI_API_KEY`) is required to use the OpenAI API (set in the `.env` file).
+*   The quality of the AI-generated messages depends on the content of `git diff` and the performance of the OpenAI API. Use the generated messages as suggestions and modify them as needed.
 
-### 概要
+### User-Friendly Messages
 
-Gish は、Git 操作を合理化し、安全に実行するように設計された Bash スクリプトです。コミット、ブランチの切り替え、プッシュ、stash の管理など、一連の Git タスクをインタラクティブに実行できます。
+Improved messages for `--s`, `--l`, `--p` options to provide clearer and more understandable information. For destructive operations (discarding changes, rollbacks, etc.), detailed prompts and warnings are displayed to prevent unintended actions.
 
-### 機能
+### Help Option (`--help`)
 
-- 未コミットの変更を管理
-- コミットを作成
-- ブランチを選択して切り替え
-- 新しいブランチを作成
-- リモートリポジトリにプッシュ
-- 単一のコマンドで Git stash を保存および適用 (`--s` オプション)
-- 単一のコマンドで特定の stash にロールバック (`--l` オプション)
-- ローカルの変更を破棄してリモートから簡単にプル (`--p` オプション)
-- 使用方法の説明付きのヘルプガイドにアクセス (`--help` オプション)
-- OpenAI を使用してコミットメッセージを自動的に生成
+Executing the `--help` option displays detailed usage instructions, option list, and examples for the Gish script. This helps even first-time users understand the script's functions and usage.
 
-### インストール手順
+## Improvements
 
-1. スクリプトを `gish` として次の場所に保存します: `~/.local/bin/gish` (注: `~` はホームディレクトリを表します)
-2. スクリプトに実行権限を付与します:
-```bash
-chmod +x ~/.local/bin/gish
-```
+### Enhanced Error Handling
 
-3. `.bashrc` または `.zshrc` に次の行を追加します:
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-alias gish='~/.local/bin/gish "$@"'
-```
+Improved error handling throughout the script to display more understandable error messages in situations such as:
 
-4. シェルを再起動するか、次のコマンドを実行して変更を適用します:
-```bash
-source ~/.bashrc  # または source ~/.zshrc
-```
+*   **Invalid Options:** Specifying non-existent options like `gish --invalid_option`
+*   **Insufficient Arguments:** Omitting the stash name for the `--s` option
+*   **Other Errors:** Failure to execute Git commands, failure to activate the virtual environment, etc.
 
-これで Git リポジトリ内で `gish` コマンドを実行できます。
+This prevents the script from stopping unexpectedly or encountering unexplained errors, providing users with the information needed to resolve issues.
 
-### 操作手順
+**Example:**
 
-以下は、メイン機能（オプションなしの `gish`）の操作手順です：
+*   Executing `gish --s mini update` (stash name not enclosed in quotes) now displays an error message.
 
-1. `gish` コマンドを実行すると、現在のブランチが表示されます。未コミットの変更がある場合は、次のオプションが表示されます：
-   - 変更をコミット
-   - 変更を stash
-   - 未コミットの変更を続行
-   - 操作をキャンセル
+### Improved Code Quality
 
-2. 変更がステージングされ、`git status` の結果が表示されます。
+*   **Readability and Maintainability:** Refactored the entire code to improve readability and maintainability. This included function splitting, variable name reviews, and adding comments to organize the code structure.
+*   **Output Format Improvement:** Unified the output message format and enhanced visibility. Changed the display of `Change statistics` to user-friendly English, among other improvements.
 
-3. コミットするかどうかを選択します：
-   - はいの場合、コミットメッセージが生成され、変更したい場合はコミットメッセージを入力するように求められます。
-   - いいえの場合、操作はキャンセルされます。
+## Usage
 
-4. ターゲットブランチを選択します：
-   - 現在のブランチ
-   - 既存のブランチ
-   - 新しいブランチ
+### Overview
 
-5. 選択に応じて、ブランチが切り替えられるか、作成されます。
+Gish is a Bash script designed to perform Git operations efficiently and safely. It allows interactive execution of daily Git tasks such as committing, branch switching, pushing, and stash management.
 
-6. 最後に、選択したブランチにプッシュするかどうかを尋ねられます。
+### Main Features
 
-操作が完了すると、現在のブランチが表示されます。
+*   **Uncommitted Change Management:** Track the change status of the working directory and select operations such as commit and stash
+*   **Commit Creation:** Generate commit messages through AI automatic generation or manual input
+*   **Branch Operations:** Select, switch, and create branches (including creation from remote branches)
+*   **Remote Repository Synchronization:** Push to the remote repository and easily pull from the remote
+*   **Stash Management:** Save and apply named stashes, rollback to `stash@{0}`
+*   **Help Display:** Display detailed usage guide with the `--help` option
+*   **Diff Display:** Display differences with the remote repository using the `--d` option (statistics information, detailed diff)
 
-### 注意事項
+### Installation Steps
 
-- コミットメッセージは空にできません。
-- 未コミットの変更がある状態でブランチを切り替える場合は注意してください。
-- プッシュ操作は、ネットワーク接続の状態に依存します。
-- 操作がキャンセルされた場合、ステージングされた変更はリセットされません。
+1.  Save the script `gish` to the `~/.local/bin/` directory (`~` represents the home directory).
+2.  Grant execute permission to the script.
 
-## 環境設定
+    ```bash
+    chmod +x ~/.local/bin/gish
+    ```
 
-### 環境変数
+3.  Add the following line to `.bashrc` or `.zshrc` to set the `PATH` environment variable and alias `gish`.
 
-`.env` ファイルを `generate_commit_message.py` と同じディレクトリに配置します。このファイルには、OpenAI API キーを `OPENAI_API_KEY` として含める必要があります。
+    ```bash
+    export PATH="$HOME/.local/bin:$PATH"
+    alias gish='~/.local/bin/gish "$@"'
+    ```
 
-`.env` ファイルのコンテンツの例:
-```
-OPENAI_API_KEY=your_openai_api_key_here
-```
+4.  Restart the shell or execute the following command to apply the settings.
 
-### Python スクリプトのパス
+    ```bash
+    source ~/.bashrc  # For bash
+    source ~/.zshrc  # For zsh
+    ```
 
-Python スクリプト (`generate_commit_message.py`) が別のディレクトリにある場合は、gish スクリプトのパスを更新します:
+    This makes the `gish` command available within Git repositories.
+
+### Basic Operation Procedure (When Executing `gish` Command)
+
+1.  Execute the `gish` command in the root directory of the Git repository. The current branch and workspace status will be displayed. If there are uncommitted changes, the following options will be displayed:
+    *   **1) Commit to current branch**
+    *   **2) Commit to existing branch**
+    *   **3) Create and commit to new branch**
+    *   **4) Cancel operation**
+
+2.  Select `1`, `2`, or `3` to commit the changes.
+
+3.  Choose the commit message generation method.
+    *   **AI Automatic Generation:** Automatically generate a commit message using the OpenAI API. The generated message can be reviewed and edited.
+    *   **Manual Input:** Follow the prompt to manually input the commit message.
+
+4.  Select the target branch (for options `2`, `3`).
+    *   **2) Commit to existing branch:** Select the target branch from the list of existing remote branches. **Warning:** The selected branch will be completely overwritten by local changes.
+    *   **3) Create and commit to new branch:** Enter a new branch name to create the branch.
+
+5.  Choose whether to push the changes to the remote repository.
+
+Upon completion, the current branch name and Git status will be displayed.
+
+### Notes
+
+*   A commit message is required (empty commit messages are not allowed).
+*   Be cautious when switching branches with uncommitted changes.
+*   Push operations depend on the network environment and may fail in unstable conditions.
+*   If the operation is canceled, staged changes will not be automatically reset. Use the `git reset` command as needed.
+
+## Environment Setup
+
+### Environment Variables (`.env` File)
+
+To use the AI commit message automatic generation feature, you need to set the OpenAI API key.
+
+1.  Create a `.env` file in the same directory as `generate_commit_message.py` (`~/.local/bin/gish-tools/`).
+2.  Add the following content to the `.env` file and replace `your_openai_api_key_here` with your actual API key.
+
+    ```
+    OPENAI_API_KEY=your_openai_api_key_here
+    ```
+
+### Python Script Path Setting
+
+If you change the path of the Python script (`generate_commit_message.py`) from the default, modify the path setting in the `gish` script.
 
 ```bash
 commit_message=$("$VENV_PYTHON" "$COMMIT_MESSAGE_SCRIPT" 2>&1)
 ```
 
-このパスがスクリプトを正しく指していることを確認して、実行エラーを回避してください。
+Ensure this path correctly points to the script to avoid execution errors.
 
-### 必要なパッケージ
+### Required Packages
 
-requirements.txt の内容:
+Contents of `requirements.txt`:
 ```
 openai>=1.0.0
 python-dotenv>=0.19.0
 ```
 
-### 仮想環境
+### Virtual Environment
 
-Python スクリプトの実行には、仮想環境を使用します。以下の手順で設定してください：
+A virtual environment is used to execute the Python script. Set it up as follows:
 
-1. 仮想環境を作成：
+1.  Create a virtual environment:
 ```bash
 cd ~/.local/bin/gish-tools
 python3 -m venv venv
@@ -173,42 +219,42 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-注: gish スクリプトは内部で `activate_virtual_env()` を呼び出すため、通常の使用時には仮想環境を意識する必要はありません。コマンド実行時にのみ自動的に仮想環境が有効化されます。
+Note: The `gish` script internally calls `activate_virtual_env()`, so you typically do not need to be aware of the virtual environment during normal use. The virtual environment will be automatically activated when the command is executed.
 
-### ファイル構成
+### File Structure
 
 ```
 ~/.local/bin/
-└── gish                    # メインのシェルスクリプト
-~/.local/bin/gish-tools/    # gish関連のツール用ディレクトリ
+└── gish                    # Main shell script
+~/.local/bin/gish-tools/    # Directory for gish-related tools
     ├── generate_commit_message.py
     ├── requirements.txt
     ├── .env
-    └── venv/              # Python 仮想環境
+    └── venv/              # Python virtual environment
 ```
 
-## トラブルシューティング
+## Troubleshooting
 
-- スクリプトを実行できない場合:
-  スクリプトファイルに実行権限があることを確認してください。
+- If the script cannot be executed:
+  Ensure the script file has execute permissions.
   ```bash
   chmod +x ~/.local/bin/gish
   ```
 
-- ブランチの切り替えに失敗した場合:
-  未コミットの変更がないか確認してください。競合がないことを確認してください。
+- If branch switching fails:
+  Check for uncommitted changes and ensure there are no conflicts.
 
-- プッシュに失敗した場合:
-  インターネット接続を確認してください。リモートリポジトリへのアクセス権があることを確認してください。
+- If push fails:
+  Check the internet connection and ensure you have access to the remote repository.
 
-## カスタマイズ
+## Customization
 
-スクリプトを編集することで、次のカスタマイズが可能です：
+You can customize the script by editing it to:
 
-- デフォルトのブランチ名の変更
-- 追加の Git コマンドの実行
-- エラーメッセージのカスタマイズ
+- Change the default branch name
+- Execute additional Git commands
+- Customize error messages
 
-## サポート
+## Support
 
-問題が発生した場合や改善のための提案がある場合は、リポジトリの Issue トラッカーを通じて報告してください。
+If you encounter any issues or have suggestions for improvement, please report them through the repository's Issue Tracker.

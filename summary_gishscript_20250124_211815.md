@@ -2,9 +2,7 @@
 
 ## Directory Structure
 
-- .aider.chat.history.md (file contents omitted as per ignore directive)
-- .aider.input.history (file contents omitted as per ignore directive)
-- .aider.tags.cache.v3 (directory inside omitted for simplicity)
+- .env (file contents omitted as per ignore directive)
 - .git (directory inside omitted for simplicity)
 - .gitignore (file contents omitted as per ignore directive)
 - .summaryignore (file contents omitted as per ignore directive)
@@ -13,8 +11,9 @@
 - docs
 - docs/Development_loadmap_gish.txt
 - generate_commit_message.py
+- gish.log (file contents omitted as per ignore directive)
 - gish.sh
-- log
+- summary_gishscript_20250121_113935.md (file contents omitted as per ignore directive)
 
 ## File Contents
 
@@ -481,7 +480,7 @@ if __name__ == "__main__":
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.0"
+    echo "ver: 1.4.1"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -647,14 +646,13 @@ easy_pull() {
            echo "DEBUG: git fetch --all --prune successful"
          fi
 
-        # Get list of remote branches (excluding current branch)
+       # Get list of remote branches (including current branch)
         echo "Loading remote branches..."
         PS3="Select branch to pull: "
         mapfile -t remote_branches < <(git branch -r | \
             grep '^  origin/' | \
             grep -v '/HEAD' | \
             sed 's#  origin/##' | \
-            grep -v "^${current_branch}\$" | \
             sort -u)
 
         if [ ${#remote_branches[@]} -eq 0 ]; then
@@ -669,7 +667,7 @@ easy_pull() {
          fi
 
         # Display branch selection
-        echo "Current branch: $current_branch (excluded from list)"
+        echo "Current branch: $current_branch (included from list)"
         select branch in "${remote_branches[@]}"; do
             if [ -n "$branch" ]; then
                 # Validate branch name
@@ -1277,6 +1275,7 @@ fi
 
 ### .summaryignore
 
+- 079ec85 - Your Name, Tue Jan 21 12:04:45 2025 +0900 : Update `.summaryignore` patterns and rename summary file
 - 234c03a - KunihiroS, Sun Dec 29 23:15:50 2024 +0900 : Refine .summaryignore and gishscript_project_summary to improve ignored file patterns and update documentation
 - 5cfc78e - KunihiroS, Fri Dec 27 17:14:00 2024 +0900 : update to add debug code.
 
@@ -1322,6 +1321,7 @@ fi
 
 ### gish.sh
 
+- 01c2f96 - Your Name, Tue Jan 21 12:08:06 2025 +0900 : Bump version to 1.4.1 and update branch selection message in easy_pull function.
 - d4dd40f - Your Name, Tue Jan 7 17:04:55 2025 +0900 : Update README and gish script for version 1.4.0, enhancing user messaging and refining command options.
 - 5cfc78e - KunihiroS, Fri Dec 27 17:14:00 2024 +0900 : update to add debug code.
 - aa899b8 - KunihiroS, Sun Dec 22 20:20:09 2024 +0900 : Refactor gish.sh: Update version to 1.3.8, improve branch handling logic, and enhance push confirmation process
@@ -1352,3 +1352,7 @@ fi
 - 87016a4 - KunihiroS, Sun Sep 1 15:33:06 2024 +0900 : 1.1.0 release
 - a7a2074 - KunihiroS, Thu Aug 29 19:50:58 2024 +0900 : minor change
 - f172f14 - KunihiroS, Thu Aug 29 19:41:52 2024 +0900 : initial release
+
+### summary_gishscript_20250121_113935.md
+
+- 079ec85 - Your Name, Tue Jan 21 12:04:45 2025 +0900 : Update `.summaryignore` patterns and rename summary file
