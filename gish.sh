@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.1"
+    echo "ver: 1.4.2"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
