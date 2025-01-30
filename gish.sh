@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.2"
+    echo "ver: 1.4.3"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -297,6 +297,13 @@ easy_pull() {
 
 # Function to display diff with remote repository
 easy_diff() {
+    # リモートの最新状態を取得
+    echo "Fetching latest changes from remote..."
+    if ! git fetch origin; then
+        echo "Error: Failed to fetch from remote" >&2
+        return 1
+    fi
+
     # Color code definition (considering portability)
     local COLOR_RESET='\033[0m'
     local COLOR_FILE='\033[36m'
