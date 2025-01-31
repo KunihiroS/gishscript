@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.3"
+    echo "ver: 1.4.4"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -304,6 +304,32 @@ easy_diff() {
         return 1
     fi
 
+    # 現在のブランチ情報を取得
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+
+    # ブランチ情報の表示
+    echo -e "\nCurrent working branch: $current_branch"
+
+    # リモートブランチの一覧を取得と表示
+    echo -e "\nAvailable remote branches:"
+    git branch -r | grep '^  origin/' | grep -v '/HEAD' | sed 's#  origin/##' | while read branch; do
+        if [ "$branch" = "$current_branch" ]; then
+            echo "* $branch (current)"
+        else
+            # 最新のコミット日時とメッセージを取得
+            commit_info=$(git log -1 --format="%cr (%h: %s)" "origin/$branch")
+            echo "  $branch - last updated $commit_info"
+        fi
+    done
+
+    # リモートブランチの存在確認
+    if ! git ls-remote --exit-code origin "$current_branch" >/dev/null 2>&1; then
+        echo "Error: remote branch 'origin/$current_branch' does not exist" >&2
+        return 1
+    fi
+
+    echo -e "\nDiff with remote '$current_branch':"
+
     # Color code definition (considering portability)
     local COLOR_RESET='\033[0m'
     local COLOR_FILE='\033[36m'
@@ -323,13 +349,6 @@ easy_diff() {
         COLOR_DEL=""
     fi
 
-    # Check remote branch existence
-    local current_branch=$(git rev-parse --abbrev-ref HEAD)
-    if ! git ls-remote --exit-code origin "$current_branch" >/dev/null 2>&1; then
-        echo "Error: remote branch 'origin/$current_branch' does not exist" >&2
-        return 1
-    fi
-
     # Output diff statistics first
     echo "Change statistics:"
     show_diff_stats
@@ -339,7 +358,6 @@ easy_diff() {
     if [[ $full_diff_choice =~ ^[Yy]$ ]]; then
         echo "Difference between remote branch 'origin/$current_branch' and local working directory:"
         echo ""
-
         PS3="Select diff display mode: "
         select display_mode in "Display first N lines" "Display full diff (with pager)" "Cancel"; do
             case "$display_mode" in
