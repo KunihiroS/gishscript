@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.4"
+    echo "ver: 1.4.5"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -895,9 +895,25 @@ gish() {
                         fi
                     else
                         echo "Push cancelled."
-                         if [[ "$DEBUG_MODE" == "true" ]]; then
-                            echo "DEBUG: Push cancelled by user."
-                         fi
+                        if [[ "$DEBUG_MODE" == "true" ]]; then
+                            echo "DEBUG: Push cancelled by user. Rolling back changes."
+                        fi
+
+                        # git reset --mixed を使用して、コミットとステージングを取り消し
+                        if ! git reset HEAD^; then  # --mixed はデフォルトなので省略可能
+                            echo "Error: Failed to rollback commit and unstage changes." >&2
+                            if [[ "$DEBUG_MODE" == "true" ]]; then
+                                echo "DEBUG: Failed to execute git reset HEAD^"
+                            fi
+                            return 1
+                        fi
+
+                        if [[ "$DEBUG_MODE" == "true" ]]; then
+                            echo "DEBUG: Successfully rolled back commit and unstaged changes."
+                            echo "DEBUG: Working directory preserved."
+                            git status  # デバッグ用に状態を表示
+                        fi
+                        echo "Changes restored to pre-commit state with all changes unstaged."
                     fi
                     ;;
                 4)
