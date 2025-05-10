@@ -153,10 +153,9 @@ Gish is a Bash script designed to perform Git operations efficiently and safely.
 
     ```bash
     export PATH="$HOME/.local/bin:$PATH"
-    gish() { ~/.local/bin/gish "$@"; }
     ```
 
-    > Do **not** use `alias gish='~/.local/bin/gish "$@"'` as this may cause argument handling issues.
+    This allows you to use the `gish` command directly, without any alias or function.
 
 4. Reload your shell:
 
