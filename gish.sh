@@ -547,7 +547,7 @@ case "$ACTION" in
         ;;
     "")
         # Execute gish function only when no arguments are provided
-        gish
+        main
         ;;
     *)
         if [[ "$DEBUG_MODE" == "true" ]]; then

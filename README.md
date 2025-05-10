@@ -124,28 +124,66 @@ Gish is a Bash script designed to perform Git operations efficiently and safely.
 
 ### Installation Steps
 
-1.  Save the script `gish` to the `~/.local/bin/` directory (`~` represents the home directory).
-2.  Grant execute permission to the script.
+1. Save the `gish` script to `~/.local/bin/` and grant execute permission:
 
     ```bash
     chmod +x ~/.local/bin/gish
     ```
 
-3.  Add the following line to `.bashrc` or `.zshrc` to set the `PATH` environment variable and alias `gish`.
+2. For AI commit message generation, set up the following in `~/.local/bin/gish-tools/`:
+    - Place `generate_commit_message.py` and `requirements.txt` in this directory.
+    - Create a `.env` file with your OpenAI API key:
+
+        ```
+        OPENAI_API_KEY=your_openai_api_key_here
+        ```
+
+    - Create a Python virtual environment and install requirements (using `uv` or `uvx` recommended):
+
+        ```bash
+        cd ~/.local/bin/gish-tools
+        python3 -m venv venv
+        source venv/bin/activate
+        uv pip install -r requirements.txt
+        ```
+
+        > uv install is recommended, pip global install is not.
+
+3. Add the following to your `.bashrc` or `.zshrc`:
 
     ```bash
     export PATH="$HOME/.local/bin:$PATH"
-    alias gish='~/.local/bin/gish "$@"'
+    gish() { ~/.local/bin/gish "$@"; }
     ```
 
-4.  Restart the shell or execute the following command to apply the settings.
+    > Do **not** use `alias gish='~/.local/bin/gish "$@"'` as this may cause argument handling issues.
+
+4. Reload your shell:
 
     ```bash
-    source ~/.bashrc  # For bash
-    source ~/.zshrc  # For zsh
+    source ~/.bashrc  # or source ~/.zshrc
     ```
 
-    This makes the `gish` command available within Git repositories.
+**Directory structure example:**
+
+```
+~/.local/bin/
+├── gish
+└── gish-tools/
+    ├── generate_commit_message.py
+    ├── requirements.txt
+    ├── .env
+    └── venv/
+```
+
+---
+
+**Notes:**
+- Ensure the paths for the `gish` script and the `gish-tools` directory match.
+- Verify that the API key in the `.env` file is correct.
+- The virtual environment is automatically activated by the `gish` script.
+
+---
 
 ### Basic Operation Procedure (When Executing `gish` Command)
 
