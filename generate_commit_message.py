@@ -126,7 +126,7 @@ def generate_commit_message(diff_content):
                 {
                     "role": "system",
                     "content": "You are a helpful assistant for generating Git commit messages. "
-                               "Generate clear, concise, and descriptive messages."
+                               "Generate clear, concise, and descriptive messages. Try to include comprehensible details of the changes made. That helps in understanding the purpose of the commit. Readability is key, list of messages is very helpful. "
                 },
                 {
                     "role": "user",
