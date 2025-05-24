@@ -2,7 +2,7 @@
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.7"
+    echo "ver: 1.4.8"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
@@ -45,6 +45,16 @@ activate_virtual_env() {
         fi
         if [[ "$DEBUG_MODE" == "true" ]]; then
             echo "DEBUG: Virtual environment activated."
+        fi
+    fi
+}
+
+# Deactivate virtual environment
+deactivate_virtual_env() {
+    if [[ "$VIRTUAL_ENV" != "" ]]; then
+        deactivate
+        if [[ "$DEBUG_MODE" == "true" ]]; then
+            echo "DEBUG: Virtual environment deactivated."
         fi
     fi
 }
@@ -105,6 +115,7 @@ stash_and_apply() {
     if [[ "$DEBUG_MODE" == "true" ]]; then
           echo "DEBUG: stash_and_apply function finished successfully."
     fi
+    deactivate_virtual_env
     exit 0  # Exit script
 }
 
@@ -143,6 +154,7 @@ apply_stash_rollback() {
      if [[ "$DEBUG_MODE" == "true" ]]; then
           echo "DEBUG: apply_stash_rollback function finished successfully."
     fi
+    deactivate_virtual_env
     exit 0  # Exit script
 }
 
@@ -292,6 +304,7 @@ easy_pull() {
     if [[ "$DEBUG_MODE" == "true" ]]; then
       echo "DEBUG: easy_pull function finished successfully."
     fi
+    deactivate_virtual_env
     exit 0
 }
 
@@ -543,6 +556,7 @@ case "$ACTION" in
         ;;
     "easy_diff")
         easy_diff
+        deactivate_virtual_env
         exit 0 # easy_diff 実行後にスクリプトを終了
         ;;
     "")
@@ -921,6 +935,9 @@ gish() {
 
 # gish()
 gish "$@"
+
+# Deactivate virtual environment before exit
+deactivate_virtual_env
 
 if [[ "$DEBUG_MODE" == "true" ]]; then
   echo "--- End of gish debug log ---"

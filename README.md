@@ -124,65 +124,149 @@ Gish is a Bash script designed to perform Git operations efficiently and safely.
 
 ### Installation Steps
 
-1. Save the `gish` script to `~/.local/bin/` and grant execute permission:
+#### Prerequisites
+
+Before installation, ensure you have the following tools installed:
+- `uv` (recommended for Python virtual environment management): [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
+- Git (version control system)
+- Python 3.8 or later
+
+#### Step 1: Create Required Directories
+
+```bash
+mkdir -p ~/.local/bin/gish-tools
+```
+
+#### Step 2: Install the Main Script
+
+1. Copy the `gish.sh` script to `~/.local/bin/gish` and grant execute permission:
 
     ```bash
+    cp gish.sh ~/.local/bin/gish
     chmod +x ~/.local/bin/gish
     ```
 
-2. For AI commit message generation, set up the following in `~/.local/bin/gish-tools/`:
-    - Place `generate_commit_message.py` and `requirements.txt` in this directory.
-    - Create a `.env` file with your OpenAI API key:
+#### Step 3: Set Up AI Commit Message Generation (Optional but Recommended)
 
-        ```
-        OPENAI_API_KEY=your_openai_api_key_here
-        ```
-
-    - Create a Python virtual environment and install requirements (using `uv` or `uvx` recommended):
-
-        ```bash
-        cd ~/.local/bin/gish-tools
-        python3 -m venv venv
-        source venv/bin/activate
-        uv pip install -r requirements.txt
-        ```
-
-        > uv install is recommended, pip global install is not.
-
-3. Add the following to your `.bashrc` or `.zshrc`:
+1. Copy the Python script and requirements file:
 
     ```bash
-    export PATH="$HOME/.local/bin:$PATH"
+    cp generate_commit_message.py ~/.local/bin/gish-tools/
+    cp requirements.txt ~/.local/bin/gish-tools/
+    chmod +x ~/.local/bin/gish-tools/generate_commit_message.py
     ```
 
-    This allows you to use the `gish` command directly, without any alias or function.
-
-4. Reload your shell:
+2. Create a `.env` file with your OpenAI API key:
 
     ```bash
-    source ~/.bashrc  # or source ~/.zshrc
+    echo "OPENAI_API_KEY=your_openai_api_key_here" > ~/.local/bin/gish-tools/.env
     ```
 
-**Directory structure example:**
+    > **Note:** Replace `your_openai_api_key_here` with your actual OpenAI API key. You can get one from [OpenAI's website](https://platform.openai.com/api-keys).
+
+3. Create a Python virtual environment using `uv` and install dependencies:
+
+    ```bash
+    cd ~/.local/bin/gish-tools
+    uv venv venv
+    source venv/bin/activate
+    uv pip install -r requirements.txt
+    deactivate
+    ```
+
+#### Step 4: Configure Your Shell
+
+Add `~/.local/bin` to your PATH by adding the following line to your shell configuration file:
+
+**For Bash users** (add to `~/.bashrc`):
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+```
+
+**For Zsh users** (add to `~/.zshrc`):
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+```
+
+#### Step 5: Reload Your Shell
+
+```bash
+source ~/.bashrc  # for Bash users
+# or
+source ~/.zshrc   # for Zsh users
+```
+
+#### Step 6: Verify Installation
+
+Test that the installation was successful:
+
+```bash
+gish --help
+```
+
+If everything is set up correctly, you should see the help message for the gish command.
+
+**Final Directory Structure:**
 
 ```
 ~/.local/bin/
-├── gish
-└── gish-tools/
-    ├── generate_commit_message.py
-    ├── requirements.txt
-    ├── .env
-    └── venv/
+├── gish                             # Main executable script
+└── gish-tools/                      # AI tools directory
+    ├── generate_commit_message.py   # AI commit message generator
+    ├── requirements.txt             # Python dependencies
+    ├── .env                         # OpenAI API key configuration
+    └── venv/                        # Python virtual environment (created by uv)
+        ├── bin/
+        ├── lib/
+        └── ...
 ```
 
----
+## Troubleshooting
 
-**Notes:**
-- Ensure the paths for the `gish` script and the `gish-tools` directory match.
-- Verify that the API key in the `.env` file is correct.
-- The virtual environment is automatically activated by the `gish` script.
+- **Permission denied error:** Ensure both scripts have execute permissions:
+  ```bash
+  chmod +x ~/.local/bin/gish
+  chmod +x ~/.local/bin/gish-tools/generate_commit_message.py
+  ```
 
----
+- **Command not found:** Verify that `~/.local/bin` is in your PATH:
+  ```bash
+  echo $PATH | grep -o ~/.local/bin
+  ```
+
+- **Python environment issues:** Make sure `uv` is installed and working:
+  ```bash
+  uv --version
+  ```
+  If you get an error, reinstall `uv` or try the alternative installation method:
+  ```bash
+  # Alternative: create virtual environment with standard Python
+  cd ~/.local/bin/gish-tools
+  python3 -m venv venv
+  source venv/bin/activate
+  pip install -r requirements.txt
+  deactivate
+  ```
+
+- **API key issues:** Verify your `.env` file contains the correct API key:
+  ```bash
+  cat ~/.local/bin/gish-tools/.env
+  ```
+
+- **Branch switching fails:** Check for uncommitted changes and ensure there are no conflicts.
+
+- **Push fails:** Check the internet connection and ensure you have access to the remote repository.
+
+- **AI commit message generation fails:** Check that your OpenAI API key is correctly set in the `.env` file and that the virtual environment is properly configured.
+
+- **Virtual environment activation fails:** Make sure the virtual environment was created correctly and all dependencies are installed:
+  ```bash
+  cd ~/.local/bin/gish-tools
+  ls -la venv/  # Should show the virtual environment directory
+  source venv/bin/activate
+  python -c "import openai; print('OpenAI installed successfully')"
+  deactivate
+  ```
 
 ### Basic Operation Procedure (When Executing `gish` Command)
 
@@ -215,16 +299,13 @@ Upon completion, the current branch name and Git status will be displayed.
 
 ## Environment Setup
 
-### Environment Variables (`.env` File)
+### Required Packages
 
-To use the AI commit message automatic generation feature, you need to set the OpenAI API key.
-
-1.  Create a `.env` file in the same directory as `generate_commit_message.py` (`~/.local/bin/gish-tools/`).
-2.  Add the following content to the `.env` file and replace `your_openai_api_key_here` with your actual API key.
-
-    ```
-    OPENAI_API_KEY=your_openai_api_key_here
-    ```
+Contents of `requirements.txt`:
+```
+openai>=1.0.0
+python-dotenv>=0.19.0
+```
 
 ### Python Script Path Setting
 
@@ -235,54 +316,6 @@ commit_message=$("$VENV_PYTHON" "$COMMIT_MESSAGE_SCRIPT" 2>&1)
 ```
 
 Ensure this path correctly points to the script to avoid execution errors.
-
-### Required Packages
-
-Contents of `requirements.txt`:
-```
-openai>=1.0.0
-python-dotenv>=0.19.0
-```
-
-### Virtual Environment
-
-A virtual environment is used to execute the Python script. Set it up as follows:
-
-1.  Create a virtual environment:
-```bash
-cd ~/.local/bin/gish-tools
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-Note: The `gish` script internally calls `activate_virtual_env()`, so you typically do not need to be aware of the virtual environment during normal use. The virtual environment will be automatically activated when the command is executed.
-
-### File Structure
-
-```
-~/.local/bin/
-└── gish                    # Main shell script
-~/.local/bin/gish-tools/    # Directory for gish-related tools
-    ├── generate_commit_message.py
-    ├── requirements.txt
-    ├── .env
-    └── venv/              # Python virtual environment
-```
-
-## Troubleshooting
-
-- If the script cannot be executed:
-  Ensure the script file has execute permissions.
-  ```bash
-  chmod +x ~/.local/bin/gish
-  ```
-
-- If branch switching fails:
-  Check for uncommitted changes and ensure there are no conflicts.
-
-- If push fails:
-  Check the internet connection and ensure you have access to the remote repository.
 
 ## Customization
 
