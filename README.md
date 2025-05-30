@@ -10,6 +10,10 @@ Gish is primarily aimed at **individual developers** to efficiently synchronize 
 
 Please refer to the source code (the `ver: n.n.n` line at the top of the script).
 
+## Important Notice
+
+Gish must be executed from the root directory of your Git repository. Running Gish from a subdirectory may lead to unexpected behavior or errors that prevent proper Git operations. Please ensure that you navigate to the repository's root before executing the script.
+
 ## Recent Topics
 
 *   Automatically move to the target branch after pulling with `gish --p`
