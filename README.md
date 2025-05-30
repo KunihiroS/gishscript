@@ -8,7 +8,7 @@ Gish is primarily aimed at **individual developers** to efficiently synchronize 
 
 ## Version
 
-Please refer to the source code (the `ver: n.n.n` line at the top of the script).
+Please refer to the source code (`ver: n.n.n` line at the top of the script).
 
 ## Important Notice
 
