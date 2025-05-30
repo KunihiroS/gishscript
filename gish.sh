@@ -1,12 +1,33 @@
 #!/bin/bash
+# Check if current working directory exists
+if [ ! -d "$PWD" ]; then
+    echo "Error: Current working directory does not exist." >&2
+    exit 1
+fi
+
+# Check if inside a Git repository
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "Error: Not a git repository. Please run gish from within a Git working directory." >&2
+    exit 1
+fi
+
+# Check if current directory is the Git repository root
+GIT_ROOT=$(git rev-parse --show-toplevel)
+if [ "$PWD" != "$GIT_ROOT" ]; then
+    echo "Error: Please run gish from the Git repository root.(not works in subdirectory)" >&2
+    echo "Current directory: $PWD" >&2
+    echo "Repository root: $GIT_ROOT" >&2
+    exit 1
+fi
 # Help list
 show_help() {
     echo "gish - A Git automation script"
-    echo "ver: 1.4.8"
+    echo "ver: 1.4.9"
     echo
     echo "gish simplifies common Git tasks such as committing changes, managing branches, and"
     echo "handling stashes. It automates the process of checking for uncommitted changes, switching"
     echo "branches, and pushing changes to a remote repository."
+    echo "gish only works in the root directory of the Git repository."
     echo
     echo "Usage: gish [OPTION]"
     echo
@@ -561,7 +582,6 @@ case "$ACTION" in
         ;;
     "")
         # Execute gish function only when no arguments are provided
-        main
         ;;
     *)
         if [[ "$DEBUG_MODE" == "true" ]]; then
