@@ -180,6 +180,8 @@ mkdir -p ~/.local/bin/gish-tools
 
 #### Step 4: Configure Your Shell
 
+- in case PATH to bin dir is not yet set, add the following line to your shell configuration file:
+
 Add `~/.local/bin` to your PATH by adding the following line to your shell configuration file:
 
 **For Bash users** (add to `~/.bashrc`):
